@@ -108,6 +108,6 @@ npm run build
 
 También puedes usar JANDOCHAT desde la terminal con nuestro CLI oficial.
 
-Ver documentación completa en: **[CLI](../CLI/README.md)**
+Ver documentación completa en: **[CLI](../CLI/README.md)** o el repositorio **[github.com/Jandomen/cli_jandochat](https://github.com/Jandomen/cli_jandochat.git)**
 
 ## 📞 Video Llamadas

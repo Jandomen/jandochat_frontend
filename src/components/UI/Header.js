@@ -33,6 +33,14 @@ export default function Header({ onMenuToggle }) {
       <div className="flex items-center gap-2 sm:gap-6">
         {/* Mobile Icons */}
         <div className="flex md:hidden items-center gap-2">
+          <button
+            onClick={logout}
+            className="p-2.5 text-red-100 hover:text-white transition-colors"
+            title="Cerrar sesión"
+          >
+            <LogOut className="w-6 h-6 text-red-400 font-bold" />
+          </button>
+
           <button className="p-2.5 text-red-100 hover:text-white transition-colors relative">
             <Bell className="w-6 h-6" />
             <div className="absolute top-3 right-3 w-2 h-2 bg-red-500 rounded-full border border-red-900 ring-2 ring-red-950 shadow-sm"></div>
