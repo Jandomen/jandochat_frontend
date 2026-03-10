@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { useParams, useLocation } from "react-router-dom";
 import ChatPrivado from "./ChatPrivado";
-import { useAuth } from "../../context/AuthContext"; 
+import { useAuth } from "../../context/AuthContext";
+import api from "../../api/axios";
 
 function ChatPrivadoWrapper() {
   const { id } = useParams();
@@ -13,24 +14,15 @@ function ChatPrivadoWrapper() {
   useEffect(() => {
     const cargarDestinatario = async () => {
       try {
-        const res = await fetch(`${process.env.REACT_APP_API_BACKEND}/api/conversaciones/${id}`, {
-          headers: {
-            Authorization: `Bearer ${localStorage.getItem("token")}`, 
-          },
-        });
+        const res = await api.get(`/api/conversaciones/${id}`);
+        const data = res.data;
 
-        const data = await res.json();
-
-        let otro = data.participantes.find(p => p._id !== user._id);
+        let otro = data.participantes?.find(p => p._id !== user?._id);
 
         if (otro && !otro.fotoPerfil) {
           try {
-            const resUser = await fetch(`${process.env.REACT_APP_API_BACKEND}/api/users/usuarios/${otro._id}`, {
-             headers: {
-              Authorization: `Bearer ${localStorage.getItem("token")}`, 
-        },
-     });
-            const userData = await resUser.json();
+            const resUser = await api.get(`/api/users/usuarios/${otro._id}`);
+            const userData = resUser.data;
             otro = { ...otro, fotoPerfil: userData.fotoPerfil };
           } catch (errorUser) {
             console.warn("No se pudo cargar fotoPerfil adicional del destinatario:", errorUser);

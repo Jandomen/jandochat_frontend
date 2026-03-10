@@ -1,6 +1,6 @@
 import { io } from "socket.io-client";
 
-const SOCKET_URL = process.env.REACT_APP_SOCKET_URL || "http://localhost:5000";
+const SOCKET_URL = process.env.REACT_APP_SOCKET_URL;
 
 class CallSocket {
   constructor() {
@@ -10,7 +10,7 @@ class CallSocket {
 
   connect(userId) {
     this.userId = userId;
-    
+
     if (this.socket?.connected) {
       this.socket.emit("join-user", userId);
       return this.socket;

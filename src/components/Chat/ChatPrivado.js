@@ -11,7 +11,7 @@ import {
   eliminarMensajeAPI,
 } from "../../api/chat";
 import { useParams, useLocation, Link } from "react-router-dom";
-import axios from "axios";
+import api from "../../api/axios";
 import { Send, Edit2, Trash2, ChevronLeft, Paperclip, X, Phone, Video } from "lucide-react";
 import { useCall } from "../../context/CallContext";
 
@@ -33,10 +33,7 @@ function ChatPrivado({ conversacionId: propConversacionId, destinatario: propDes
   const [destinatario, setDestinatario] = useState(propDestinatario || null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [offlineQueue, setOfflineQueue] = useState(() => {
-    const saved = localStorage.getItem(`offline_msgs_${conversacionId}`);
-    return saved ? JSON.parse(saved) : [];
-  });
+
 
   const {
     startCall,
@@ -51,6 +48,13 @@ function ChatPrivado({ conversacionId: propConversacionId, destinatario: propDes
   const conversacionId = propConversacionId || id;
   const { showConfirm, showPrompt } = useModal();
   const { success, error: showErrorToast } = useToast();
+
+  const [offlineQueue, setOfflineQueue] = useState(() => {
+    const saved = localStorage.getItem(`offline_msgs_${conversacionId}`);
+    try {
+      return saved ? JSON.parse(saved) : [];
+    } catch { return []; }
+  });
 
   const socket = useSocket({
     "mensaje-recibido": (nuevoMensaje) => {
@@ -94,10 +98,7 @@ function ChatPrivado({ conversacionId: propConversacionId, destinatario: propDes
         } else if (locationDestinatario) {
           setDestinatario(locationDestinatario);
         } else if (!destinatario && conversacionId) {
-          const res = await axios.get(
-            `${process.env.REACT_APP_API_BACKEND}/api/conversaciones/${conversacionId}`,
-            { headers: { Authorization: `Bearer ${localStorage.getItem("token")}` } }
-          );
+          const res = await api.get(`/api/conversaciones/${conversacionId}`);
           const otro = res.data.participantes?.find((p) => p._id !== usuario?._id);
           setDestinatario(otro);
         }

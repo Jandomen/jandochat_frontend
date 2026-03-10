@@ -51,11 +51,16 @@ jandochat_frontend/
 
 ## ⚙️ Configuración
 
-El archivo `.env` debe tener:
+Para desarrollo local, crea un archivo `.env` en la raíz con:
 
 ```env
-REACT_APP_API_BACKEND=http://localhost:8000
+REACT_APP_API_BACKEND=https://jandochat-backend.onrender.com
+REACT_APP_SOCKET_URL=https://jandochat-backend.onrender.com
 ```
+
+> [!IMPORTANT]
+> En producción (Vercel, Netlify, etc.), asegúrate de configurar estas variables en el panel de control de tu proveedor para que la aplicación apunte al servidor correcto sin necesidad de modificar el código.
+
 
 ## 🚀 Ejecución
 
