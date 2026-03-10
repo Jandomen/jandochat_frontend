@@ -4,6 +4,7 @@ import { useModal } from "../../context/ModalContext";
 import { useToast } from "../../context/ToastContext";
 import { MessageSquare, Plus, Trash2, Clock, Search, X, Check, Film, Image as ImageIcon, Type } from "lucide-react";
 import useSocket from "../../hooks/useSocket";
+import api from "../../api/axios";
 
 export default function ConversacionesList({ onSeleccionar, onCrearConversacion }) {
   const [conversaciones, setConversaciones] = useState([]);
@@ -47,22 +48,14 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
     const fetchData = async () => {
       setCargando(true);
       try {
-        const [convRes, statusRes] = await Promise.all([
-          fetch(`${process.env.REACT_APP_API_BACKEND}/api/conversaciones`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-          }),
-          fetch(`${process.env.REACT_APP_API_BACKEND}/api/status`, {
-            headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-          })
+        const [convData, statusData] = await Promise.all([
+          api.get("/api/conversaciones").then(r => r.data),
+          api.get("/api/status").then(r => r.data)
         ]);
-
-        if (!convRes.ok || !statusRes.ok) throw new Error("Error al cargar datos");
-
-        const [convData, statusData] = await Promise.all([convRes.json(), statusRes.json()]);
         setConversaciones(Array.isArray(convData) ? convData : []);
         setStatuses(Array.isArray(statusData) ? statusData : []);
       } catch (error) {
-        // Error silencioso
+        console.error("Error al cargar datos:", error);
       } finally {
         setCargando(false);
       }
@@ -151,20 +144,12 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
         mediaUrl = URL.createObjectURL(archivoParaSubir);
       }
 
-      const res = await fetch(`${process.env.REACT_APP_API_BACKEND}/api/status`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({
-          contenido: nuevoStatus,
-          tipo: tipoNuevoStatus,
-          mediaUrl: mediaUrl,
-          duracionHoras: user?.configuracionStatus?.duracion || 24
-        }),
-      });
-      const data = await res.json();
+      const data = await api.post("/api/status", {
+        contenido: nuevoStatus,
+        tipo: tipoNuevoStatus,
+        mediaUrl: mediaUrl,
+        duracionHoras: user?.configuracionStatus?.duracion || 24
+      }).then(r => r.data);
       setStatuses([data, ...statuses]);
       setNuevoStatus("");
       setMediaArchivo(null);
@@ -180,10 +165,7 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
 
   const verVistas = async (statusId) => {
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_BACKEND}/api/status/${statusId}/vistas`, {
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
-      const data = await res.json();
+      const data = await api.get(`/api/status/${statusId}/vistas`).then(r => r.data);
       setVistasStatus(data);
     } catch (err) {
       console.error("Error al obtener vistas");
@@ -192,10 +174,7 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
 
   const marcarVisto = async (statusId) => {
     try {
-      await fetch(`${process.env.REACT_APP_API_BACKEND}/api/status/${statusId}/visto`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${localStorage.getItem("token")}` },
-      });
+      await api.post(`/api/status/${statusId}/visto`);
     } catch (err) {
       console.error("Error al marcar como visto");
     }

@@ -1,21 +1,18 @@
 import axios from "axios";
 
 const api = axios.create({
-  baseURL: process.env.REACT_APP_API_BACKEND, 
-  headers: {
-    "Content-Type": "application/json",
-  },
+  baseURL: process.env.REACT_APP_API_BACKEND,
 });
 
 
 api.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem("token");
-  // console.log("📤 Enviando token:", token); 
+    // console.log("📤 Enviando token:", token); 
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     } else {
-     // console.log("🚫 No se encontró token en localStorage");
+      // console.log("🚫 No se encontró token en localStorage");
     }
     return config;
   },
