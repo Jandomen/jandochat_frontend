@@ -4,14 +4,13 @@ const SOCKET_URL = process.env.REACT_APP_API_BACKEND;
 
 const socketNotification = io(SOCKET_URL, {
   autoConnect: false,
-  transports: ["websocket"],
   reconnection: true,
   reconnectionAttempts: Infinity,
   reconnectionDelay: 1000,
 });
 
 socketNotification.on("connect", () => {
- // console.log("✅ Socket conectado con ID:", socketNotification.id);
+  // console.log("✅ Socket conectado con ID:", socketNotification.id);
 });
 
 socketNotification.on("connect_error", (err) => {
@@ -19,7 +18,7 @@ socketNotification.on("connect_error", (err) => {
 });
 
 socketNotification.on("disconnect", () => {
- // console.log("🔌 Socket desconectado");
+  // console.log("🔌 Socket desconectado");
 });
 
 socketNotification.on("nueva-notificacion", (notificacion) => {

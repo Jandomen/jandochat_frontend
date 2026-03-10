@@ -4,10 +4,15 @@ import React, {
   useState,
   useEffect,
   useRef,
+  useCallback,
 } from "react";
+import { useNavigate } from "react-router-dom";
 import socketNotification from "../socket/socketNotification";
 import { useAuth } from "./AuthContext";
+import { useToast } from "./ToastContext";
 import * as notiAPI from "../api/notificaciones";
+import { getPostById } from "../api/posts";
+import { NOTIF_SOUNDS } from "../utils/sounds";
 
 const NotificationsContext = createContext();
 
@@ -18,7 +23,53 @@ export const NotificationsProvider = ({ children }) => {
   });
 
   const { user } = useAuth();
+  const { success: showToast, error: showErrorToast } = useToast();
+  const navigate = useNavigate();
   const nuevaNotificacionListener = useRef(null);
+
+  const getNavigationFromNotification = useCallback((notificacion) => {
+    const { tipo, conversacion, publicacion, emisor, comentarioId } = notificacion;
+
+    let navigateTo = null;
+    let state = {};
+
+    switch (tipo) {
+      case "mensaje":
+        if (conversacion) {
+          const convId = conversacion._id || conversacion;
+          navigateTo = `/chat/${convId}`;
+          state = { destinatario: emisor };
+        }
+        break;
+
+      case "comentario":
+      case "respuesta":
+        if (publicacion) {
+          const postId = publicacion._id || publicacion;
+          navigateTo = "/usuarios";
+          state = {
+            highlightPost: postId,
+            highlightCommentId: comentarioId
+          };
+        }
+        break;
+
+      case "reaccion":
+        if (publicacion) {
+          const postId = publicacion._id || publicacion;
+          navigateTo = "/usuarios";
+          state = { highlightPost: postId };
+        }
+        break;
+
+      default:
+        if (emisor?._id) {
+          navigateTo = `/usuarios/${emisor._id}`;
+        }
+    }
+
+    return navigateTo ? { navigateTo, state } : null;
+  }, []);
 
   useEffect(() => {
     localStorage.setItem("sonidoHabilitado", sonidoHabilitado);
@@ -27,7 +78,6 @@ export const NotificationsProvider = ({ children }) => {
   useEffect(() => {
     if (!user?._id) {
       if (socketNotification.connected) {
-        console.log("🔌 Desconectando socket porque no hay usuario");
         socketNotification.disconnect();
       }
       setNotificaciones([]);
@@ -38,7 +88,6 @@ export const NotificationsProvider = ({ children }) => {
       try {
         const data = await notiAPI.obtenerNotificaciones();
         setNotificaciones(Array.isArray(data) ? data : []);
-       // console.log("📬 Notificaciones iniciales cargadas:", data);
       } catch (error) {
         console.error("❌ Error al cargar notificaciones:", error);
         setNotificaciones([]);
@@ -52,30 +101,19 @@ export const NotificationsProvider = ({ children }) => {
     }
 
     socketNotification.emit("join-user", user._id);
-    //console.log("🟢 Usuario unido a la sala:", user._id);
 
     const onNuevaNotificacion = (notificacion) => {
-     // console.log("🔔 Nueva notificación recibida:", notificacion);
-
       setNotificaciones((prev) => [notificacion, ...prev]);
 
-     // console.log("🎚️ Estado de sonidoHabilitado:", sonidoHabilitado);
+      const toastMessage = notificacion.mensaje || "Nueva notificación";
+      const navigation = getNavigationFromNotification(notificacion);
+      showToast(toastMessage, "info", 3000, navigation);
+
       if (sonidoHabilitado) {
-        try {
-       //   console.log("✅ Intentando reproducir sonido...");
-
-          const audio = new Audio("/sounds/bbc_electronic_07043302.mp3");
-
-          audio.play()
-            .then(() => {
-             // console.log("🔊 Sonido reproducido correctamente");
-            })
-            .catch((err) => {
-              console.warn("🔇 No se pudo reproducir el sonido:", err);
-            });
-        } catch (err) {
-          console.error("🔇 Error al reproducir sonido:", err);
-        }
+        const soundType = user?.configuracionStatus?.sonidoTipo || "bleep1";
+        const soundInfo = NOTIF_SOUNDS.find(s => s.id === soundType) || NOTIF_SOUNDS[0];
+        const audio = new Audio(soundInfo.url);
+        audio.play().catch((err) => console.warn("Audio play blocked:", err));
       }
     };
 
@@ -87,7 +125,6 @@ export const NotificationsProvider = ({ children }) => {
     nuevaNotificacionListener.current = onNuevaNotificacion;
 
     const onConnect = () => {
-     // console.log("🔁 Reconectado, re-uniendo a sala");
       socketNotification.emit("join-user", user._id);
     };
 
@@ -97,15 +134,14 @@ export const NotificationsProvider = ({ children }) => {
     });
 
     return () => {
-     // console.log("🧹 Limpiando listeners de socket");
       socketNotification.off("nueva-notificacion", nuevaNotificacionListener.current);
       socketNotification.off("connect", onConnect);
       socketNotification.off("connect_error");
       socketNotification.disconnect();
     };
-  }, [user, sonidoHabilitado]);
+  }, [user, sonidoHabilitado, showToast, getNavigationFromNotification]);
 
-  
+
   const agregarNotificacion = (notif) => {
     setNotificaciones((prev) => [notif, ...prev]);
   };
@@ -158,11 +194,10 @@ export const NotificationsProvider = ({ children }) => {
   };
 
   const habilitarSonido = () => {
-    const audio = new Audio("/sounds/bbc_electronic_07043302.mp3");
+    const audio = new Audio(NOTIF_SOUNDS[0].url);
     audio.play()
       .then(() => {
         setSonidoHabilitado(true);
-       // console.log("🔊 Sonido habilitado por el usuario");
       })
       .catch((err) => {
         console.warn("❌ No se pudo habilitar el sonido:", err);
@@ -170,11 +205,66 @@ export const NotificationsProvider = ({ children }) => {
   };
 
   const deshabilitarSonido = () => {
-  setSonidoHabilitado(false);
-  localStorage.setItem("sonidoHabilitado", "false");
-   //console.log("🔇 Sonido deshabilitado por el usuario");
+    setSonidoHabilitado(false);
+    localStorage.setItem("sonidoHabilitado", "false");
   };
 
+  const handleNotificationClick = useCallback(async (notificacion) => {
+    // Mark as read
+    try {
+      await notiAPI.marcarComoLeida(notificacion._id);
+      setNotificaciones((prev) =>
+        prev.map((n) => (n._id === notificacion._id ? { ...n, leido: true } : n))
+      );
+    } catch (err) {
+      console.error("Error al marcar como leída:", err);
+    }
+
+    const { tipo, conversacion, publicacion, emisor, comentarioId } = notificacion;
+
+    let navigateTo = null;
+    let state = {};
+
+    switch (tipo) {
+      case "mensaje":
+        if (conversacion) {
+          const convId = conversacion._id || conversacion;
+          navigateTo = `/chat/${convId}`;
+          state = { destinatario: emisor };
+        }
+        break;
+
+      case "comentario":
+      case "respuesta":
+      case "reaccion":
+        if (publicacion) {
+          const postId = publicacion._id || publicacion;
+          // Verify the post still exists before navigating
+          try {
+            await getPostById(postId);
+            navigateTo = "/usuarios";
+            state = {
+              highlightPost: postId,
+              highlightCommentId: comentarioId
+            };
+          } catch (err) {
+            // Post was deleted
+            showErrorToast("Esta publicación ya no existe o fue eliminada");
+            return;
+          }
+        }
+        break;
+
+      default:
+        if (emisor?._id) {
+          navigateTo = `/usuarios/${emisor._id}`;
+        }
+    }
+
+    if (navigateTo) {
+      navigate(navigateTo, { state });
+    }
+  }, [navigate, showErrorToast]);
 
   const noLeidasCount = notificaciones.filter((n) => !n.leido).length;
 
@@ -192,6 +282,7 @@ export const NotificationsProvider = ({ children }) => {
         deshabilitarSonido,
         sonidoHabilitado,
         noLeidasCount,
+        handleNotificationClick,
       }}
     >
       {children}

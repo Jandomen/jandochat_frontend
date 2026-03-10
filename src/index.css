@@ -4,3 +4,22 @@
 @import "slick-carousel/slick/slick.css";
 @import "slick-carousel/slick/slick-theme.css";
 
+@layer utilities {
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+@keyframes progress {
+  from { width: 0%; }
+  to { width: 100%; }
+}
+
+.animate-progress {
+  animation: progress 5s linear forwards;
+}
+

@@ -1,11 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useNotificaciones } from "../../context/NotificationsContext";
+import { useToast } from "../../context/ToastContext";
 
 export default function NotificacionesDropdown() {
   const [isOpen, setIsOpen] = useState(false);
   const dropdownRef = useRef(null);
   const navigate = useNavigate();
+  const { info } = useToast();
 
   const {
     notificaciones,
@@ -18,11 +20,18 @@ export default function NotificacionesDropdown() {
         await marcarComoLeidaEnBackend(noti._id);
       }
 
+      if (noti.publicacion) {
+        const postId = noti.publicacion._id || noti.publicacion;
+        navigate("/usuarios", { state: { highlightPost: postId } });
+        setIsOpen(false);
+        return;
+      }
+
       switch (noti.tipo) {
         case "chat":
           const convId = noti.conversacion?._id || noti.conversacion;
           if (!convId) {
-            alert("No se encontró la conversación asociada.");
+            info("No se encontró la conversación asociada.");
             break;
           }
           navigate(`/chat/${convId}`);
@@ -31,18 +40,18 @@ export default function NotificacionesDropdown() {
         case "seguidor":
           const userId = noti.emisor?._id || noti.emisor;
           if (!userId) {
-            alert("No se encontró el usuario.");
+            info("No se encontró el usuario.");
             break;
           }
           navigate(`/perfil/${userId}`);
           break;
 
         case "sistema":
-          alert(noti.mensaje || "Notificación del sistema");
+          info(noti.mensaje || "Notificación del sistema");
           break;
 
         default:
-          alert("Tipo de notificación no manejado.");
+          info("Tipo de notificación no manejado.");
       }
 
       setIsOpen(false);
