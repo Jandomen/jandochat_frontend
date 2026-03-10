@@ -6,6 +6,8 @@ import { useToast } from "../../context/ToastContext";
 import {
   uploadProfilePhoto,
   deleteProfilePhoto,
+  uploadCoverPhoto,
+  deleteCoverPhoto,
   getUsuariosBloqueados,
   desbloquearUsuario,
   actualizarPerfil,
@@ -50,7 +52,9 @@ const Configuraciones = () => {
   const [mostrarPasswords, setMostrarPasswords] = useState(false);
   const [bloqueados, setBloqueados] = useState([]);
   const [file, setFile] = useState(null);
+  const [coverFile, setCoverFile] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [loadingCover, setLoadingCover] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
 
@@ -105,6 +109,52 @@ const Configuraciones = () => {
       showError("Error al subir foto");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleCoverFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile && !selectedFile.type.startsWith("image/")) {
+      setErrorMsg("Solo se permiten archivos de imagen.");
+      return;
+    }
+    setCoverFile(selectedFile);
+  };
+
+  const handleUploadCover = async () => {
+    if (!coverFile) return;
+    const formData = new FormData();
+    formData.append("fotoPortada", coverFile);
+    setLoadingCover(true);
+    try {
+      const res = await uploadCoverPhoto(formData);
+      const updatedUser = { ...user, fotoPortada: res.fotoPortada };
+      setUser(updatedUser);
+      localStorage.setItem("usuario", JSON.stringify(updatedUser));
+      setCoverFile(null);
+      success("Portada actualizada");
+    } catch (err) {
+      console.error(err);
+      showError("Error al subir portada");
+    } finally {
+      setLoadingCover(false);
+    }
+  };
+
+  const handleDeleteCover = async () => {
+    const confirmed = await showConfirm("Eliminar portada", "¿Eliminar foto de portada?");
+    if (!confirmed) return;
+    setLoadingCover(true);
+    try {
+      await deleteCoverPhoto();
+      const updatedUser = { ...user, fotoPortada: "" };
+      setUser(updatedUser);
+      localStorage.setItem("usuario", JSON.stringify(updatedUser));
+      success("Portada eliminada");
+    } catch (error) {
+      setErrorMsg("Error al eliminar portada.");
+    } finally {
+      setLoadingCover(false);
     }
   };
 
@@ -209,6 +259,50 @@ const Configuraciones = () => {
                   <button
                     onClick={handleDelete}
                     disabled={loading}
+                    className="p-4 bg-red-50 text-red-600 rounded-3xl hover:bg-red-600 hover:text-white transition-all active:scale-95"
+                  >
+                    <Trash2 className="w-5 h-5" />
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Cover Picture Section */}
+        <div className="bg-white border border-red-50 rounded-[3rem] p-8 shadow-xl shadow-red-100/20">
+          <h2 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-3">
+            <Camera className="w-6 h-6 text-red-600" />
+            <span>Imagen de Portada</span>
+          </h2>
+          <div className="flex flex-col items-center gap-6">
+            <div className="relative w-full aspect-[3/1] rounded-3xl overflow-hidden shadow-inner bg-gray-100">
+              <img
+                src={user?.fotoPortada || "https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=2000&auto=format&fit=crop"}
+                alt="Portada"
+                className="w-full h-full object-cover"
+              />
+            </div>
+
+            <div className="w-full space-y-3">
+              <label className="flex items-center justify-center gap-2 w-full py-4 bg-gray-50 text-gray-600 font-black text-xs uppercase tracking-widest rounded-3xl cursor-pointer hover:bg-gray-100 transition-all border-2 border-dashed border-gray-200">
+                <Camera className="w-4 h-4" />
+                <span>{coverFile ? coverFile.name : "Seleccionar Portada"}</span>
+                <input type="file" className="hidden" onChange={handleCoverFileChange} accept="image/*" />
+              </label>
+
+              <div className="flex gap-3">
+                <button
+                  onClick={handleUploadCover}
+                  disabled={loadingCover || !coverFile}
+                  className="flex-1 py-4 bg-red-600 text-white font-black text-xs uppercase tracking-widest rounded-3xl shadow-lg shadow-red-200 hover:bg-red-700 active:scale-95 transition-all disabled:opacity-40"
+                >
+                  Subir Portada
+                </button>
+                {user?.fotoPortada && (
+                  <button
+                    onClick={handleDeleteCover}
+                    disabled={loadingCover}
                     className="p-4 bg-red-50 text-red-600 rounded-3xl hover:bg-red-600 hover:text-white transition-all active:scale-95"
                   >
                     <Trash2 className="w-5 h-5" />

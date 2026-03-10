@@ -24,7 +24,7 @@ import { useToast } from "../../context/ToastContext";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
-import { Search, UserPlus, Users, Flame, Newspaper } from "lucide-react";
+import { Search, UserPlus, Users, Flame, Newspaper, X } from "lucide-react";
 import CreatePost from "./CreatePost";
 import PostCard from "./PostCard";
 import StoryBar from "../Stories/StoryBar";
@@ -35,6 +35,10 @@ export default function Usuarios() {
   const [usuariosAleatorios, setUsuariosAleatorios] = useState([]);
   const [feed, setFeed] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [historial, setHistorial] = useState(() => {
+    const saved = localStorage.getItem("search_history_feed");
+    return saved ? JSON.parse(saved) : [];
+  });
   const { user: userActual } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -56,6 +60,24 @@ export default function Usuarios() {
     };
     fetchSearch();
   }, [search]);
+
+  useEffect(() => {
+    localStorage.setItem("search_history_feed", JSON.stringify(historial));
+  }, [historial]);
+
+  const addToHistory = (u) => {
+    const item = { _id: u._id, nombre: u.nombre, fotoPerfil: u.fotoPerfil, username: u.username };
+    setHistorial(prev => {
+      const filtered = prev.filter(h => h._id !== u._id);
+      return [item, ...filtered].slice(0, 5); // Keep last 5
+    });
+    navigate(`/usuarios/${u._id}`);
+  };
+
+  const removeFromHistory = (e, id) => {
+    e.stopPropagation();
+    setHistorial(prev => prev.filter(h => h._id !== id));
+  };
 
   useEffect(() => {
     const fetchInitialData = async () => {
@@ -305,12 +327,72 @@ export default function Usuarios() {
               <Newspaper className="w-6 h-6" />
             </div>
             <div>
-              <h1 className="text-3xl font-black text-gray-900 tracking-tight">Tu Feed Social</h1>
-              <p className="text-gray-400 font-bold uppercase text-[10px] tracking-[0.3em]">Novedades de tu red</p>
+              <h1 className="text-3xl font-black text-gray-900 tracking-tight">🪐 Explora el Universo</h1>
+              <p className="text-gray-400 font-bold uppercase text-[10px] tracking-[0.3em]">Conéctate con la galaxia</p>
             </div>
           </div>
 
           <StoryBar />
+
+          {/* Search Section moved here */}
+          <div className="bg-white rounded-[2.5rem] border border-red-50 p-8 shadow-xl shadow-red-100/10 mb-8">
+            <div className="flex items-center gap-3 mb-6">
+              <Search className="w-5 h-5 text-red-600" />
+              <h3 className="text-lg font-black text-gray-900 tracking-tight">Encuentra Amigos</h3>
+            </div>
+
+            <div className="relative group mb-6">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 transition-colors group-focus-within:text-red-500" />
+              <input
+                type="text"
+                placeholder="Nombre o @usuario..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="w-full pl-12 pr-6 py-4 bg-gray-50/50 border-transparent rounded-2xl text-sm focus:bg-white focus:ring-4 focus:ring-red-50 transition-all outline-none italic"
+              />
+            </div>
+
+            {loading ? (
+              <div className="flex justify-center py-4">
+                <div className="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
+              </div>
+            ) : (search.trim() ? resultados : historial).length > 0 && (
+              <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
+                <div className="flex items-center justify-between mb-2">
+                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                    {search.trim() ? "Resultados de búsqueda" : "Búsquedas recientes"}
+                  </p>
+                  {!search.trim() && historial.length > 0 && (
+                    <button onClick={() => setHistorial([])} className="text-[10px] font-black text-red-600 uppercase tracking-widest hover:underline">Limpiar todo</button>
+                  )}
+                </div>
+                {(search.trim() ? resultados : historial).map((usuario) => (
+                  <div
+                    key={usuario._id}
+                    onClick={() => addToHistory(usuario)}
+                    className="group flex items-center gap-4 p-4 rounded-3xl hover:bg-red-50 cursor-pointer transition-all border border-transparent hover:border-red-100 bg-gray-50/20"
+                  >
+                    <img
+                      src={usuario.fotoPerfil || "/assets/Custom-Icon-Design-Pretty-Office-8-User-red.256.png"}
+                      className="w-10 h-10 rounded-2xl object-cover shadow-sm group-hover:scale-105 transition-transform"
+                      alt=""
+                    />
+                    <div className="flex-1 min-w-0">
+                      <p className="font-black text-gray-900 truncate text-sm">{usuario.nombre}</p>
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">@{usuario.username || 'usuario'}</p>
+                    </div>
+                    {search.trim() ? (
+                      <UserPlus className="w-4 h-4 text-gray-200 group-hover:text-red-600 transition-colors" />
+                    ) : (
+                      <button onClick={(e) => removeFromHistory(e, usuario._id)} className="p-2 hover:bg-red-100 rounded-xl text-gray-300 hover:text-red-600 transition-all">
+                        <X className="w-4 h-4" />
+                      </button>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           <CreatePost onPost={handleCreatePost} />
 
@@ -349,51 +431,7 @@ export default function Usuarios() {
 
         {/* Right Column: Search & Suggestions */}
         <div className="space-y-10">
-          {/* Search Section */}
-          <div className="bg-white rounded-[2.5rem] border border-red-50 p-8 shadow-xl shadow-red-100/20">
-            <div className="flex items-center gap-3 mb-6">
-              <Search className="w-5 h-5 text-red-600" />
-              <h3 className="text-lg font-black text-gray-900 tracking-tight">Encuentra Amigos</h3>
-            </div>
 
-            <div className="relative group mb-6">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 transition-colors group-focus-within:text-red-500" />
-              <input
-                type="text"
-                placeholder="Nombre o @usuario..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-12 pr-6 py-4 bg-gray-50/50 border-transparent rounded-2xl text-sm focus:bg-white focus:ring-4 focus:ring-red-50 transition-all outline-none italic"
-              />
-            </div>
-
-            {loading ? (
-              <div className="flex justify-center py-4">
-                <div className="w-6 h-6 border-2 border-red-600 border-t-transparent rounded-full animate-spin"></div>
-              </div>
-            ) : resultados.length > 0 && (
-              <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
-                {resultados.map((usuario) => (
-                  <div
-                    key={usuario._id}
-                    onClick={() => navigate(`/usuarios/${usuario._id}`)}
-                    className="group flex items-center gap-4 p-3 rounded-2xl hover:bg-red-50 cursor-pointer transition-all border border-transparent hover:border-red-100"
-                  >
-                    <img
-                      src={usuario.fotoPerfil || "/assets/Custom-Icon-Design-Pretty-Office-8-User-red.256.png"}
-                      className="w-12 h-12 rounded-xl object-cover shadow-sm group-hover:scale-105 transition-transform"
-                      alt=""
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-black text-gray-900 truncate">{usuario.nombre}</p>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Ver Perfil</p>
-                    </div>
-                    <UserPlus className="w-5 h-5 text-gray-200 group-hover:text-red-600 transition-colors" />
-                  </div>
-                ))}
-              </div>
-            )}
-          </div>
 
           <SuggestionsSlider />
         </div>

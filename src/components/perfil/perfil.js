@@ -18,8 +18,8 @@ import { Link } from "react-router-dom";
 import { Users, Mail, Calendar, MapPin, Edit3, ChevronRight, Newspaper, Globe, Trash2, Camera } from "lucide-react";
 import PostCard from "../Usuarios/PostCard";
 
-function Perfil() {
-  const { user } = useAuth();
+const Perfil = () => {
+  const { user, setUser } = useAuth();
   const { showConfirm, showPrompt } = useModal();
   const { success, error } = useToast();
   const [seguidores, setSeguidores] = useState([]);
@@ -56,9 +56,11 @@ function Perfil() {
     formData.append("fotoPortada", file);
 
     try {
-      await uploadCoverPhoto(formData);
+      const res = await uploadCoverPhoto(formData);
+      const updatedUser = { ...user, fotoPortada: res.fotoPortada };
+      setUser(updatedUser);
+      localStorage.setItem("usuario", JSON.stringify(updatedUser));
       success("Foto de portada actualizada");
-      window.location.reload(); // Simple way to refresh user data from context
     } catch (err) {
       error("Error al subir portada");
     } finally {
@@ -72,8 +74,10 @@ function Perfil() {
 
     try {
       await deleteCoverPhoto();
+      const updatedUser = { ...user, fotoPortada: "" };
+      setUser(updatedUser);
+      localStorage.setItem("usuario", JSON.stringify(updatedUser));
       success("Portada eliminada");
-      window.location.reload();
     } catch (err) {
       error("Error al eliminar portada");
     }
@@ -188,22 +192,23 @@ function Perfil() {
           alt="Portada"
           className="w-full h-full object-cover transform transition-transform duration-700 group-hover/cover:scale-110"
         />
-        <div className="absolute inset-0 bg-black/20 group-hover/cover:bg-black/40 transition-all"></div>
+        <div className="absolute inset-0 bg-black/10 transition-all"></div>
 
-        <div className="absolute bottom-6 right-6 flex gap-3 opacity-0 group-hover/cover:opacity-100 transition-all translate-y-4 group-hover/cover:translate-y-0">
+        <div className="absolute bottom-6 right-6 flex gap-3 z-20">
           <button
             onClick={() => coverInputRef.current.click()}
-            className="flex items-center gap-2 bg-white/90 backdrop-blur-md text-gray-900 px-4 py-2.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-white transition-all active:scale-95"
+            className="flex items-center gap-2 bg-white/95 backdrop-blur-md text-gray-900 px-4 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-2xl hover:bg-white hover:scale-105 transition-all active:scale-95 border border-red-50"
             disabled={loadingCover}
           >
-            {loadingCover ? <div className="w-4 h-4 border-2 border-red-600 border-t-transparent animate-spin rounded-full"></div> : <Camera className="w-4 h-4" />}
-            {user?.fotoPortada ? "Cambiar Portada" : "Añadir Portada"}
+            {loadingCover ? <div className="w-4 h-4 border-2 border-red-600 border-t-transparent animate-spin rounded-full"></div> : <Camera className="w-4 h-4 text-red-600" />}
+            <span>{user?.fotoPortada ? "Cambiar Portada" : "Añadir Portada"}</span>
           </button>
 
           {user?.fotoPortada && (
             <button
               onClick={handleDeleteCover}
-              className="p-2.5 bg-red-600/90 backdrop-blur-md text-white rounded-2xl shadow-xl hover:bg-red-600 transition-all active:scale-95"
+              className="p-2.5 bg-red-600 text-white rounded-2xl shadow-2xl hover:bg-red-700 hover:scale-105 transition-all active:scale-95 border border-red-400"
+              title="Eliminar portada"
             >
               <Trash2 className="w-5 h-5" />
             </button>
