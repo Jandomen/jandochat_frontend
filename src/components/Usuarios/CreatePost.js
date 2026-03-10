@@ -7,6 +7,9 @@ export default function CreatePost({ onPost }) {
     const [mediaList, setMediaList] = useState([]); // [{url, tipo, file}]
     const [errorStatus, setErrorStatus] = useState("");
     const [isUploading, setIsUploading] = useState(false);
+    const [showEmojis, setShowEmojis] = useState(false);
+
+    const commonEmojis = ["😊", "😂", "🥰", "😎", "🔥", "✨", "🙌", "🤔", "👍", "❤️", "⚡", "🚀", "🌈", "👀", "💯"];
 
     const fileInputRef = useRef(null);
 
@@ -35,7 +38,7 @@ export default function CreatePost({ onPost }) {
         setIsUploading(true);
         try {
             let mediaFinal = [];
-            
+
             const filesToUpload = mediaList.filter(m => m.file);
             if (filesToUpload.length > 0) {
                 const uploaded = await uploadMedia(filesToUpload.map(m => m.file));
@@ -140,9 +143,33 @@ export default function CreatePost({ onPost }) {
                                 <span className="hidden sm:inline">Adjuntar</span>
                             </button>
 
-                            <button type="button" className="p-4 text-gray-300 hover:text-red-500 transition-colors bg-gray-50 rounded-2xl">
-                                <Smile className="w-6 h-6" />
-                            </button>
+                            <div className="relative">
+                                <button
+                                    type="button"
+                                    onClick={() => setShowEmojis(!showEmojis)}
+                                    className={`p-4 transition-all rounded-2xl ${showEmojis ? 'bg-red-600 text-white shadow-lg' : 'bg-gray-50 text-gray-300 hover:text-red-500'}`}
+                                >
+                                    <Smile className="w-6 h-6" />
+                                </button>
+
+                                {showEmojis && (
+                                    <div className="absolute bottom-full left-0 mb-4 p-4 bg-white rounded-3xl shadow-[0_20px_50px_rgba(0,0,0,0.2)] border border-red-50 grid grid-cols-5 gap-2 z-50 animate-in fade-in slide-in-from-bottom-2">
+                                        {commonEmojis.map(emoji => (
+                                            <button
+                                                key={emoji}
+                                                type="button"
+                                                onClick={() => {
+                                                    setContenido(prev => prev + emoji);
+                                                    setShowEmojis(false);
+                                                }}
+                                                className="text-2xl hover:scale-125 transition-transform p-1"
+                                            >
+                                                {emoji}
+                                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </div>
 
                         <button

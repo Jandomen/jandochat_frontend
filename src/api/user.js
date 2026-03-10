@@ -6,7 +6,7 @@ const API_URL = process.env.REACT_APP_API_BACKEND;
 export async function buscarUsuarios(query) {
   const res = await fetch(`${API_URL}/api/users?search=${encodeURIComponent(query)}`);
   if (!res.ok) throw new Error("Error buscando usuarios");
-  return res.json(); 
+  return res.json();
 }
 
 
@@ -23,7 +23,7 @@ export async function crearConversacion(userId) {
     body: JSON.stringify({ userId }),
   });
   if (!res.ok) throw new Error("Error creando conversación");
-  return res.json(); 
+  return res.json();
 }
 
 
@@ -33,7 +33,7 @@ export async function getUserProfile(userId) {
 }
 
 export async function getUsers() {
-  const token = localStorage.getItem("token"); 
+  const token = localStorage.getItem("token");
   const res = await fetch(`${API_URL}/api/users/users`, {
     headers: {
       Authorization: `Bearer ${token}`,
@@ -112,6 +112,18 @@ export async function uploadProfilePhoto(formData) {
   return res.json();
 }
 
+export async function uploadCoverPhoto(formData) {
+  const token = localStorage.getItem("token");
+  const res = await fetch(`${API_URL}/api/users/me/cover`, {
+    method: "PUT",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+    body: formData,
+  });
+  if (!res.ok) throw new Error("Error subiendo foto de portada");
+  return res.json();
+}
 
 export async function deleteProfilePhoto() {
   const token = localStorage.getItem("token");
@@ -122,6 +134,18 @@ export async function deleteProfilePhoto() {
     },
   });
   if (!res.ok) throw new Error("Error eliminando foto de perfil");
+  return res.json();
+}
+
+export async function deleteCoverPhoto() {
+  const token = localStorage.getItem("token");
+  const res = await fetch(`${API_URL}/api/users/me/cover`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!res.ok) throw new Error("Error eliminando foto de portada");
   return res.json();
 }
 

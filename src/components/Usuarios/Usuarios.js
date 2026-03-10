@@ -238,6 +238,62 @@ export default function Usuarios() {
     return u.seguidores.includes(id);
   };
 
+  const SuggestionsSlider = () => (
+    <div className="bg-white rounded-[2.5rem] border border-red-600/5 p-8 shadow-xl shadow-red-100/10 overflow-hidden relative mb-4 mt-2">
+      <div className="absolute top-0 right-0 p-4 opacity-5">
+        <Flame className="w-20 h-20 text-red-600" />
+      </div>
+
+      <div className="flex items-center gap-3 mb-8 relative z-10">
+        <Users className="w-5 h-5 text-red-600" />
+        <h3 className="text-lg font-black text-gray-900 tracking-tight">Sugerencias</h3>
+      </div>
+
+      <Slider
+        dots={false}
+        infinite={true}
+        speed={1000}
+        autoplay={true}
+        autoplaySpeed={3000}
+        slidesToShow={1}
+        slidesToScroll={1}
+      >
+        {usuariosAleatorios.map((u) => (
+          <div key={u._id} className="p-2">
+            <div className="bg-gray-50/50 rounded-[2rem] p-6 text-center border border-red-50 space-y-4">
+              <img
+                src={u.fotoPerfil || "/assets/Custom-Icon-Design-Pretty-Office-8-User-red.256.png"}
+                alt={u.nombre}
+                className="w-24 h-24 mx-auto rounded-[1.5rem] object-cover shadow-lg border-4 border-white cursor-pointer hover:scale-110 transition-transform"
+                onClick={() => navigate(`/usuarios/${u._id}`)}
+              />
+              <div>
+                <p className="font-black text-gray-900 text-lg">{u.nombre}</p>
+                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{u.seguidores?.length || 0} Seguidores</p>
+              </div>
+
+              {yaLoSigo(u) ? (
+                <button
+                  className="w-full py-4 bg-red-100 text-red-600 font-black uppercase tracking-widest text-[10px] rounded-xl hover:bg-red-200 transition-all"
+                  onClick={() => handleDejarDeSeguir(u._id)}
+                >
+                  Siguiendo
+                </button>
+              ) : (
+                <button
+                  className="w-full py-4 bg-red-600 text-white font-black uppercase tracking-widest text-[10px] rounded-xl shadow-lg shadow-red-200 hover:bg-red-700 hover:scale-[1.02] transition-all"
+                  onClick={() => handleSeguir(u._id)}
+                >
+                  Seguir Usuario
+                </button>
+              )}
+            </div>
+          </div>
+        ))}
+      </Slider>
+    </div>
+  );
+
   return (
     <div className="max-w-7xl mx-auto px-4 py-10">
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
@@ -265,20 +321,27 @@ export default function Usuarios() {
                 <p className="text-gray-400 font-black">Tu feed está vacío. ¡Sigue a alguien!</p>
               </div>
             ) : (
-              feed.map(post => (
-                <PostCard
-                  key={post._id}
-                  id={`post-${post._id}`}
-                  post={post}
-                  onReact={handleReact}
-                  onComment={handleComment}
-                  onReply={handleReply}
-                  onEdit={handleEdit}
-                  onDelete={handleDelete}
-                  onShare={handleShare}
-                  onDeleteComment={handleDeleteComment}
-                  onEditComment={handleEditComment}
-                />
+              feed.map((post, index) => (
+                <React.Fragment key={post._id}>
+                  <PostCard
+                    id={`post-${post._id}`}
+                    post={post}
+                    onReact={handleReact}
+                    onComment={handleComment}
+                    onReply={handleReply}
+                    onEdit={handleEdit}
+                    onDelete={handleDelete}
+                    onShare={handleShare}
+                    onDeleteComment={handleDeleteComment}
+                    onEditComment={handleEditComment}
+                  />
+                  {/* Inject Suggestions Slider every 5 posts, but only visible on mobile */}
+                  {(index + 1) % 5 === 0 && (
+                    <div className="lg:hidden">
+                      <SuggestionsSlider />
+                    </div>
+                  )}
+                </React.Fragment>
               ))
             )}
           </div>
@@ -332,60 +395,7 @@ export default function Usuarios() {
             )}
           </div>
 
-          {/* Suggestions Slider */}
-          <div className="bg-white rounded-[2.5rem] border border-red-600/5 p-8 shadow-xl shadow-red-100/10 overflow-hidden relative">
-            <div className="absolute top-0 right-0 p-4 opacity-5">
-              <Flame className="w-20 h-20 text-red-600" />
-            </div>
-
-            <div className="flex items-center gap-3 mb-8 relative z-10">
-              <Users className="w-5 h-5 text-red-600" />
-              <h3 className="text-lg font-black text-gray-900 tracking-tight">Suguerencias</h3>
-            </div>
-
-            <Slider
-              dots={false}
-              infinite={true}
-              speed={1000}
-              autoplay={true}
-              autoplaySpeed={3000}
-              slidesToShow={1}
-              slidesToScroll={1}
-            >
-              {usuariosAleatorios.map((u) => (
-                <div key={u._id} className="p-2">
-                  <div className="bg-gray-50/50 rounded-[2rem] p-6 text-center border border-red-50 space-y-4">
-                    <img
-                      src={u.fotoPerfil || "/assets/Custom-Icon-Design-Pretty-Office-8-User-red.256.png"}
-                      alt={u.nombre}
-                      className="w-24 h-24 mx-auto rounded-[1.5rem] object-cover shadow-lg border-4 border-white cursor-pointer hover:scale-110 transition-transform"
-                      onClick={() => navigate(`/usuarios/${u._id}`)}
-                    />
-                    <div>
-                      <p className="font-black text-gray-900 text-lg">{u.nombre}</p>
-                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{u.seguidores?.length || 0} Seguidores</p>
-                    </div>
-
-                    {yaLoSigo(u) ? (
-                      <button
-                        className="w-full py-4 bg-red-100 text-red-600 font-black uppercase tracking-widest text-[10px] rounded-xl hover:bg-red-200 transition-all"
-                        onClick={() => handleDejarDeSeguir(u._id)}
-                      >
-                        Siguiendo
-                      </button>
-                    ) : (
-                      <button
-                        className="w-full py-4 bg-red-600 text-white font-black uppercase tracking-widest text-[10px] rounded-xl shadow-lg shadow-red-200 hover:bg-red-700 hover:scale-[1.02] transition-all"
-                        onClick={() => handleSeguir(u._id)}
-                      >
-                        Seguir Usuario
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
-            </Slider>
-          </div>
+          <SuggestionsSlider />
         </div>
       </div>
     </div>

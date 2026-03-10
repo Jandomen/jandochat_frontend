@@ -47,7 +47,7 @@ export default function PostCard({ post, id, onReact, onComment, onReply, onDele
         const handleKeyDown = (e) => {
             const mediaArr = post.media || [];
             if (mediaArr.length === 0) return;
-            
+
             // No manejar teclas cuando está en fullscreen (el ImageViewer las maneja)
             if (mediaFullscreen) return;
 
@@ -348,19 +348,30 @@ export default function PostCard({ post, id, onReact, onComment, onReply, onDele
                                             </div>
                                             <p className="text-gray-700 text-sm leading-relaxed">{c.texto}</p>
                                         </div>
-                                        <div className="flex gap-4 mt-1 ml-2">
-                                            <button onClick={() => setReplyTo({ id: c._id, name: c.usuario?.nombre })} className="text-xs text-gray-500 hover:text-red-600 font-medium">Responder</button>
-                                            <span className="text-xs text-gray-300">•</span>
-                                            <span className="text-xs text-gray-400">{new Date(c.createdAt).toLocaleTimeString()}</span>
+                                        <div className="flex gap-4 mt-1.5 ml-2 items-center">
+                                            <button onClick={() => setReplyTo({ id: c._id, name: c.usuario?.nombre })} className="text-[11px] text-gray-400 hover:text-red-600 font-black uppercase tracking-tighter">Responder</button>
+                                            <span className="text-[10px] text-gray-200">|</span>
+                                            <span className="text-[10px] text-gray-300 font-medium">{new Date(c.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+
                                             {(esDuenoPost || esDuenoComentario) && (
-                                                <div className="flex gap-2 ml-auto">
+                                                <div className="flex gap-3 ml-auto opacity-0 group-hover:opacity-100 transition-opacity">
                                                     {esDuenoComentario && (
-                                                        <button onClick={() => handleEditCommentModal(c)} className="text-xs text-gray-400 hover:text-red-600">
+                                                        <button
+                                                            onClick={() => handleEditCommentModal(c)}
+                                                            className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-blue-600 transition-colors"
+                                                            title="Editar comentario"
+                                                        >
                                                             <Edit3 className="w-3 h-3" />
+                                                            <span className="hidden sm:inline">Editar</span>
                                                         </button>
                                                     )}
-                                                    <button onClick={() => handleDeleteCommentModal(c._id)} className="text-xs text-gray-400 hover:text-red-600">
+                                                    <button
+                                                        onClick={() => handleDeleteCommentModal(c._id)}
+                                                        className="flex items-center gap-1.5 text-[10px] font-black uppercase tracking-widest text-gray-400 hover:text-red-600 transition-colors"
+                                                        title="Eliminar comentario"
+                                                    >
                                                         <Trash2 className="w-3 h-3" />
+                                                        <span className="hidden sm:inline">Eliminar</span>
                                                     </button>
                                                 </div>
                                             )}

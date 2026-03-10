@@ -221,8 +221,14 @@ const PerfilOtroUsuario = () => {
 
       {/* Profile Header Card */}
       <div className="relative group">
-        {/* Cover Placeholder */}
+        {/* Cover Photo */}
         <div className="h-64 rounded-[3.5rem] bg-gradient-to-br from-red-600 to-red-800 shadow-2xl relative overflow-hidden">
+          <img
+            src={usuario?.fotoPortada || "https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=2000&auto=format&fit=crop"}
+            alt="Portada"
+            className="w-full h-full object-cover transform transition-transform duration-700 group-hover:scale-110"
+          />
+          <div className="absolute inset-0 bg-black/20 group-hover:bg-black/30 transition-all"></div>
           <div className="absolute inset-0 opacity-10 bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
           <div className="absolute -bottom-24 -right-24 w-64 h-64 bg-white/10 rounded-full blur-3xl"></div>
           <div className="absolute -top-12 left-1/4 w-32 h-32 bg-red-400/20 rounded-full blur-2xl"></div>

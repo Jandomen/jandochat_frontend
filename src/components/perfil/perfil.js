@@ -2,7 +2,7 @@ import React, { useState, useEffect } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { useModal } from "../../context/ModalContext";
 import { useToast } from "../../context/ToastContext";
-import { getSeguidores, getSiguiendo } from "../../api/user";
+import { getSeguidores, getSiguiendo, uploadCoverPhoto, deleteCoverPhoto } from "../../api/user";
 import {
   getPostsByUser,
   reaccionarPost,
@@ -15,7 +15,7 @@ import {
   deleteComentario
 } from "../../api/posts";
 import { Link } from "react-router-dom";
-import { Users, Mail, Calendar, MapPin, Edit3, ChevronRight, Newspaper, Globe } from "lucide-react";
+import { Users, Mail, Calendar, MapPin, Edit3, ChevronRight, Newspaper, Globe, Trash2, Camera } from "lucide-react";
 import PostCard from "../Usuarios/PostCard";
 
 function Perfil() {
@@ -26,6 +26,8 @@ function Perfil() {
   const [siguiendo, setSiguiendo] = useState([]);
   const [posts, setPosts] = useState([]);
   const [activeTab, setActiveTab] = useState("publicaciones");
+  const [loadingCover, setLoadingCover] = useState(false);
+  const coverInputRef = React.useRef(null);
 
   useEffect(() => {
     const cargarDatos = async () => {
@@ -44,6 +46,38 @@ function Perfil() {
     };
     if (user?._id) cargarDatos();
   }, [user?._id]);
+
+  const handleUpdateCover = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setLoadingCover(true);
+    const formData = new FormData();
+    formData.append("fotoPortada", file);
+
+    try {
+      await uploadCoverPhoto(formData);
+      success("Foto de portada actualizada");
+      window.location.reload(); // Simple way to refresh user data from context
+    } catch (err) {
+      error("Error al subir portada");
+    } finally {
+      setLoadingCover(false);
+    }
+  };
+
+  const handleDeleteCover = async () => {
+    const confirm = await showConfirm("Eliminar portada", "¿Seguro que quieres eliminar tu foto de portada?");
+    if (!confirm) return;
+
+    try {
+      await deleteCoverPhoto();
+      success("Portada eliminada");
+      window.location.reload();
+    } catch (err) {
+      error("Error al eliminar portada");
+    }
+  };
 
   const handleReact = async (id, tipo) => {
     try {
@@ -74,7 +108,7 @@ function Perfil() {
       const editado = await editPost(id, { contenido: nuevo });
       setPosts(posts.map(p => p._id === id ? { ...p, contenido: editado.contenido } : p));
       success("Editado");
-    } catch (err) { 
+    } catch (err) {
       console.error("Error edit", err);
       error("Error al editar");
     }
@@ -87,7 +121,7 @@ function Perfil() {
       await deletePost(id);
       setPosts(posts.filter(p => p._id !== id));
       success("Publicación eliminada");
-    } catch (err) { 
+    } catch (err) {
       console.error("Error delete", err);
       error("Error al eliminar");
     }
@@ -98,7 +132,7 @@ function Perfil() {
       const shared = await sharePost(id, { contenidoCompartir: content });
       setPosts([shared, ...posts]);
       success("Compartido");
-    } catch (err) { 
+    } catch (err) {
       console.error("Error share", err);
       error("Error al compartir");
     }
@@ -118,7 +152,7 @@ function Perfil() {
       const comments = await deleteComentario(pid, cid);
       setPosts(posts.map(p => p._id === pid ? { ...p, comentarios: comments } : p));
       success("Comentario eliminado");
-    } catch (err) { 
+    } catch (err) {
       console.error("Error delete comment", err);
       error("Error al eliminar");
     }
@@ -147,9 +181,46 @@ function Perfil() {
 
   return (
     <div className="max-w-4xl mx-auto pb-12">
-      <div className="relative mt-8 group">
-        <div className="absolute inset-0 bg-gradient-to-r from-red-600 to-red-400 rounded-[3rem] blur-2xl opacity-10 group-hover:opacity-20 transition-opacity"></div>
-        <div className="relative bg-white border border-red-50 rounded-[3rem] p-8 shadow-xl shadow-red-100/20 overflow-hidden text-center md:text-left">
+      {/* Cover Photo Section */}
+      <div className="relative h-64 md:h-80 w-full mt-6 rounded-[3rem] overflow-hidden group/cover shadow-2xl">
+        <img
+          src={user?.fotoPortada || "https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=2000&auto=format&fit=crop"}
+          alt="Portada"
+          className="w-full h-full object-cover transform transition-transform duration-700 group-hover/cover:scale-110"
+        />
+        <div className="absolute inset-0 bg-black/20 group-hover/cover:bg-black/40 transition-all"></div>
+
+        <div className="absolute bottom-6 right-6 flex gap-3 opacity-0 group-hover/cover:opacity-100 transition-all translate-y-4 group-hover/cover:translate-y-0">
+          <button
+            onClick={() => coverInputRef.current.click()}
+            className="flex items-center gap-2 bg-white/90 backdrop-blur-md text-gray-900 px-4 py-2.5 rounded-2xl font-black text-xs uppercase tracking-widest shadow-xl hover:bg-white transition-all active:scale-95"
+            disabled={loadingCover}
+          >
+            {loadingCover ? <div className="w-4 h-4 border-2 border-red-600 border-t-transparent animate-spin rounded-full"></div> : <Camera className="w-4 h-4" />}
+            {user?.fotoPortada ? "Cambiar Portada" : "Añadir Portada"}
+          </button>
+
+          {user?.fotoPortada && (
+            <button
+              onClick={handleDeleteCover}
+              className="p-2.5 bg-red-600/90 backdrop-blur-md text-white rounded-2xl shadow-xl hover:bg-red-600 transition-all active:scale-95"
+            >
+              <Trash2 className="w-5 h-5" />
+            </button>
+          )}
+        </div>
+
+        <input
+          type="file"
+          ref={coverInputRef}
+          onChange={handleUpdateCover}
+          className="hidden"
+          accept="image/*"
+        />
+      </div>
+
+      <div className="relative -mt-20 px-6">
+        <div className="relative bg-white border border-red-50 rounded-[3rem] p-8 shadow-2xl shadow-red-100/20 overflow-hidden text-center md:text-left">
           <div className="absolute -top-12 -right-12 w-48 h-48 bg-red-600/5 rounded-full"></div>
           <div className="flex flex-col md:flex-row items-center md:items-start gap-8 relative z-10">
             <div className="relative group/avatar">
@@ -175,7 +246,7 @@ function Perfil() {
                 </div>
                 {user?.createdAt && (
                   <div className="px-4 py-2 bg-gray-50 rounded-2xl border border-gray-100 text-sm font-bold text-gray-600 flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-red-500" /> 
+                    <Calendar className="w-4 h-4 text-red-500" />
                     {new Date(user.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
                   </div>
                 )}

@@ -1,4 +1,5 @@
 import React, { useEffect, useState, useRef } from "react";
+import { WifiOff } from "lucide-react";
 import useSocket from "../../hooks/useSocket";
 import useAuth from "../../hooks/useAuth";
 import { useModal } from "../../context/ModalContext";
@@ -32,6 +33,10 @@ function ChatPrivado({ conversacionId: propConversacionId, destinatario: propDes
   const [destinatario, setDestinatario] = useState(propDestinatario || null);
   const [error, setError] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [offlineQueue, setOfflineQueue] = useState(() => {
+    const saved = localStorage.getItem(`offline_msgs_${conversacionId}`);
+    return saved ? JSON.parse(saved) : [];
+  });
 
   const {
     startCall,
@@ -103,6 +108,28 @@ function ChatPrivado({ conversacionId: propConversacionId, destinatario: propDes
     cargarDestinatario();
   }, [conversacionId, propDestinatario, locationDestinatario, destinatario, usuario]);
 
+  // Sync offline queue when coming back online
+  useEffect(() => {
+    if (navigator.onLine && offlineQueue.length > 0 && usuario) {
+      const syncMessages = async () => {
+        const queue = [...offlineQueue];
+        for (const msg of queue) {
+          try {
+            await enviarMensajeAPI(msg);
+            setOfflineQueue(prev => prev.filter(m => m.tempId !== msg.tempId));
+          } catch (err) {
+            console.error("Failed to sync message", msg, err);
+          }
+        }
+      };
+      syncMessages();
+    }
+  }, [offlineQueue, usuario]);
+
+  useEffect(() => {
+    localStorage.setItem(`offline_msgs_${conversacionId}`, JSON.stringify(offlineQueue));
+  }, [offlineQueue, conversacionId]);
+
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     const newMedia = files.map(file => ({
@@ -122,19 +149,32 @@ function ChatPrivado({ conversacionId: propConversacionId, destinatario: propDes
   const enviarMensaje = async (e) => {
     e.preventDefault();
     if ((!mensaje.trim() && media.length === 0) || !destinatario || loading || !usuario) return;
-    setLoading(true);
+    const msgData = {
+      contenido: mensaje,
+      conversacion: conversacionId,
+      emisor: usuario._id,
+      media: media.map(m => ({ url: m.url, tipo: m.tipo })), // Simulation
+      tempId: Date.now()
+    };
+
+    if (!navigator.onLine) {
+      setOfflineQueue([...offlineQueue, msgData]);
+      setMensaje("");
+      setMedia([]);
+      setLoading(false);
+      return;
+    }
 
     try {
-      await enviarMensajeAPI({
-        contenido: mensaje,
-        conversacion: conversacionId,
-        emisor: usuario._id,
-        media: media.map(m => ({ url: m.url, tipo: m.tipo })) // Simulation
-      });
+      await enviarMensajeAPI(msgData);
       setMensaje("");
       setMedia([]);
     } catch (error) {
-      setError("Error al enviar mensaje.");
+      // If error (e.g. server down), add to offline queue
+      setOfflineQueue([...offlineQueue, msgData]);
+      setMensaje("");
+      setMedia([]);
+      setError("Mensaje guardado localmente (Sin conexión)");
     } finally {
       setLoading(false);
     }
@@ -217,16 +257,18 @@ function ChatPrivado({ conversacionId: propConversacionId, destinatario: propDes
       </div>
 
       <div className="flex-1 overflow-y-auto p-4 space-y-4 scroll-smooth">
-        {mensajes.map((m, i) => {
-          const emisorId = typeof m.emisor === "string" ? m.emisor : m.emisor?._id;
+        {[...mensajes, ...offlineQueue].map((m, i) => {
+          const emisorId = m.tempId ? m.emisor : (typeof m.emisor === "string" ? m.emisor : m.emisor?._id);
           const esAutor = emisorId === usuario?._id;
+          const isPending = !!m.tempId;
+
           return (
-            <div key={m._id || i} className={`flex ${esAutor ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
+            <div key={m._id || m.tempId || i} className={`flex ${esAutor ? "justify-end" : "justify-start"} animate-in fade-in slide-in-from-bottom-2 duration-300`}>
               <div className={`group relative max-w-[85%] sm:max-w-[75%] ${esAutor ? "items-end" : "items-start"}`}>
                 <div className={`p-5 rounded-[2.5rem] shadow-lg text-[15px] leading-relaxed transition-all ${esAutor
                   ? "bg-gradient-to-br from-red-600 to-red-700 text-white rounded-tr-none shadow-red-200"
                   : "bg-white text-gray-800 rounded-tl-none border border-red-50"
-                  }`}
+                  } ${isPending ? "opacity-60 grayscale-[0.5]" : ""}`}
                 >
                   {m.media && m.media.length > 0 && (
                     <div className="mb-3 grid grid-cols-1 gap-2">
@@ -244,11 +286,17 @@ function ChatPrivado({ conversacionId: propConversacionId, destinatario: propDes
                   <p className="whitespace-pre-wrap font-medium">{escapeHTML(m.contenido)}</p>
 
                   <div className={`flex items-center gap-2 mt-3 opacity-60 text-[10px] font-black uppercase tracking-widest ${esAutor ? "justify-end text-white/70" : "justify-start text-gray-400"}`}>
-                    {m.updatedAt && m.updatedAt !== m.createdAt && <span>• Editado</span>}
-                    <span>{new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                    {isPending ? (
+                      <span className="flex items-center gap-1"><WifiOff className="w-3 h-3" /> Pendiente</span>
+                    ) : (
+                      <>
+                        {m.updatedAt && m.updatedAt !== m.createdAt && <span>• Editado</span>}
+                        <span>{new Date(m.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
+                      </>
+                    )}
                   </div>
 
-                  {esAutor && (
+                  {esAutor && !isPending && (
                     <div className="absolute top-1/2 -translate-y-1/2 right-full mr-4 opacity-0 group-hover:opacity-100 transition-all flex flex-col gap-2">
                       <button onClick={() => editarMensaje(m)} className="p-2.5 bg-white text-gray-400 hover:text-red-600 rounded-2xl shadow-xl shadow-red-100 border border-red-50 transition-all hover:scale-110">
                         <Edit2 className="w-4 h-4" />

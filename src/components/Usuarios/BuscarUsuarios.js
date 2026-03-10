@@ -174,34 +174,34 @@ export default function BuscarUsuarios({ onBack }) {
             ))}
           </div>
         ) : (
-          <div className="space-y-4">
+          <div className="space-y-2">
             {resultados.map((user) => (
               <div
                 key={user._id}
                 onClick={() => iniciarConversacion(user)}
-                className="flex items-center gap-5 p-5 bg-white border-2 border-gray-50 rounded-[2.5rem] cursor-pointer hover:border-red-500 hover:shadow-2xl hover:shadow-red-500/10 transition-all group relative overflow-hidden active:scale-[0.98]"
+                className="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-3xl cursor-pointer hover:bg-red-50 hover:border-red-200 hover:shadow-lg transition-all group active:scale-[0.98]"
               >
                 <div className="relative">
                   <img
                     src={user.fotoPerfil || "/assets/Custom-Icon-Design-Pretty-Office-8-User-red.256.png"}
                     alt="avatar"
-                    className="w-14 h-14 rounded-2xl object-cover shadow-lg border-2 border-white group-hover:scale-105 transition-transform"
+                    className="w-12 h-12 rounded-2xl object-cover shadow-sm group-hover:scale-105 transition-transform"
                   />
                   {user.online && (
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full"></div>
+                    <div className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-green-500 border-2 border-white rounded-full"></div>
                   )}
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <h4 className="font-extrabold text-gray-900 group-hover:text-red-700 transition-colors truncate">
+                  <h4 className="font-bold text-gray-900 group-hover:text-red-700 transition-colors truncate">
                     {user.nombre}
                   </h4>
-                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5 truncate italic">
+                  <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest truncate italic">
                     {user.email}
                   </p>
                 </div>
 
-                <div className="p-3 bg-red-600 text-white rounded-2xl translate-x-12 opacity-0 group-hover:translate-x-0 group-hover:opacity-100 transition-all shadow-lg shadow-red-200">
+                <div className="p-3 text-red-100 group-hover:text-red-600 transition-colors">
                   <MessageSquare className="w-5 h-5" />
                 </div>
               </div>

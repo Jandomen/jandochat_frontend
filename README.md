@@ -8,10 +8,13 @@ El frontend se conecta a: **https://jandochat-backend.onrender.com**
 
 ## 🚀 Características
 
+- **Modo Offline (PWA)**: La aplicación es instalable y funciona sin conexión a internet.
+- **Sincronización Inteligente**: Los mensajes enviados sin conexión se guardan localmente y se sincronizan automáticamente al recuperar la señal.
 - **Chat en tiempo real**: Socket.io
 - **Estados/Historias**: Crear, ver y eliminar historias (texto, imagen, video)
 - **Editor de video**: Cortar videos a 20 segundos para historias
 - **Publicaciones**: Posts con multimedia, reacciones y comentarios
+- **Gestión de Comentarios**: Edita y elimina tus opiniones con una interfaz intuitiva.
 - **Reacciones**: 8 tipos de reacciones personalizables
 - **Navegación con teclado**: Flechas y Escape en historias y galería de imágenes
 - **Sonidos de notificación**: Personalizables por el usuario

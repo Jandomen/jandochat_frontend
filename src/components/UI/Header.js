@@ -1,9 +1,11 @@
 import React from "react";
 import useAuth from "../../hooks/useAuth";
 import { LogOut, Bell, Menu } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function Header({ onMenuToggle }) {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const letters = [
     { src: "/Letras/icons8-j-50.png", alt: "J" },
     { src: "/Letras/icons8-a-50.png", alt: "A" },
@@ -31,26 +33,31 @@ export default function Header({ onMenuToggle }) {
       </div>
 
       <div className="flex items-center gap-2 sm:gap-6">
-        {/* Mobile Icons */}
+        {/* Mobile Icons: Reordered - Menu, Bell, Logout */}
         <div className="flex md:hidden items-center gap-2">
+          <button
+            onClick={onMenuToggle}
+            className="p-2.5 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/20 active:scale-90 transition-all"
+            title="Menú"
+          >
+            <Menu className="w-6 h-6" />
+          </button>
+
+          <button
+            onClick={() => navigate('/notificaciones')}
+            className="p-2.5 text-red-100 hover:text-white transition-colors relative"
+            title="Notificaciones"
+          >
+            <Bell className="w-6 h-6" />
+            <div className="absolute top-3 right-3 w-2 h-2 bg-red-500 rounded-full border border-red-900 ring-2 ring-red-950 shadow-sm"></div>
+          </button>
+
           <button
             onClick={logout}
             className="p-2.5 text-red-100 hover:text-white transition-colors"
             title="Cerrar sesión"
           >
             <LogOut className="w-6 h-6 text-red-400 font-bold" />
-          </button>
-
-          <button className="p-2.5 text-red-100 hover:text-white transition-colors relative">
-            <Bell className="w-6 h-6" />
-            <div className="absolute top-3 right-3 w-2 h-2 bg-red-500 rounded-full border border-red-900 ring-2 ring-red-950 shadow-sm"></div>
-          </button>
-
-          <button
-            onClick={onMenuToggle}
-            className="p-2.5 bg-white/5 border border-white/10 rounded-xl text-white hover:bg-white/20 active:scale-90 transition-all"
-          >
-            <Menu className="w-6 h-6" />
           </button>
         </div>
 

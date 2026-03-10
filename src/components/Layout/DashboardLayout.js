@@ -88,7 +88,9 @@ export default function DashboardLayout({ children }) {
               </div>
               <span className="text-[10px] font-black uppercase tracking-tighter">Chat</span>
               {noLeidasCount > 0 && (
-                <span className="absolute top-1 right-1 bg-red-600 w-2.5 h-2.5 rounded-full border-2 border-white animate-pulse"></span>
+                <span className="absolute -top-1 -right-1 bg-red-600 text-white text-[9px] font-bold w-5 h-5 rounded-full border-2 border-white flex items-center justify-center shadow-lg animate-bounce">
+                  {noLeidasCount}
+                </span>
               )}
             </button>
 
