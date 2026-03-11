@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route, useNavigate, useLocation } from "react-router-dom";
 import React, { useState, useEffect } from "react";
 import { WifiOff } from "lucide-react";
+import { App as CapApp } from "@capacitor/app";
 import Home from "./components/Auth/Home";
 import LoginForm from "./components/Auth/LoginForm";
 import RegisterForm from "./components/Auth/RegisterForm";
@@ -38,6 +39,25 @@ function AppContent() {
       window.removeEventListener("offline", handleOffline);
     };
   }, []);
+
+  // Manejo del botón de "Atrás" físico (Triangulito en Android)
+  useEffect(() => {
+    const handleBackButton = async () => {
+      // Si estamos en la raíz (Home o Usuarios) y no hay historial para volver lo minimizamos
+      // Caso contrario, navegamos hacia atrás en el historial de React Router
+      if (location.pathname === "/" || location.pathname === "/usuarios") {
+        CapApp.minimizeApp();
+      } else {
+        navigate(-1);
+      }
+    };
+
+    const backListener = CapApp.addListener("backButton", handleBackButton);
+
+    return () => {
+      backListener.then((listener) => listener.remove());
+    };
+  }, [location.pathname, navigate]);
 
   const isSettingsOpen = location.pathname === "/configuraciones";
 

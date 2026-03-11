@@ -42,21 +42,21 @@ const CustomModal = ({
             onClick={onClose}
         >
             <div 
-                className="bg-white w-full max-w-md rounded-[3rem] shadow-2xl shadow-red-900/20 border border-red-50 overflow-hidden animate-in zoom-in-95 duration-300"
+                className="bg-white/95 backdrop-blur-xl w-full max-w-[280px] sm:max-w-md rounded-[2rem] sm:rounded-[3rem] shadow-2xl shadow-red-900/20 border border-red-50 overflow-hidden animate-in zoom-in-95 duration-300"
                 onClick={(e) => e.stopPropagation()}
             >
-                <div className="p-8 pb-0 flex justify-between items-start">
-                    <div className="p-3 bg-red-50/50 rounded-2xl text-red-600">
-                        {type === "prompt" ? <HelpCircle className="w-6 h-6" /> : <AlertCircle className="w-6 h-6" />}
+                <div className="p-4 sm:p-8 pb-0 flex justify-between items-center">
+                    <div className="p-2 sm:p-3 bg-red-50/50 rounded-xl sm:rounded-2xl text-red-600">
+                        {type === "prompt" ? <HelpCircle className="w-4 h-4 sm:w-6 sm:h-6" /> : <AlertCircle className="w-4 h-4 sm:w-6 sm:h-6" />}
                     </div>
-                    <button onClick={onClose} className="p-2 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-xl transition-all">
-                        <X className="w-6 h-6" />
+                    <button onClick={onClose} className="p-1.5 sm:p-2 text-gray-300 hover:text-red-600 hover:bg-red-50 rounded-lg sm:rounded-xl transition-all">
+                        <X className="w-4 h-4 sm:w-6 sm:h-6" />
                     </button>
                 </div>
 
-                <div className="p-8 pt-6">
-                    <h3 className="text-2xl font-black text-gray-900 tracking-tight mb-2 uppercase italic">{title}</h3>
-                    <p className="text-gray-500 text-sm leading-relaxed mb-6 font-medium">{message}</p>
+                <div className="p-4 sm:p-8 pt-3 sm:pt-6">
+                    <h3 className="text-xs sm:text-2xl font-black text-gray-900 tracking-tight mb-1 sm:mb-2 uppercase italic">{title}</h3>
+                    <p className="text-gray-500 text-[10px] sm:text-sm leading-tight sm:leading-relaxed mb-4 sm:mb-6 font-medium">{message}</p>
 
                     {type === "prompt" && (
                         <div className="relative group">
@@ -66,7 +66,7 @@ const CustomModal = ({
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
                                 placeholder={placeholder}
-                                className="w-full px-6 py-4 bg-gray-50 border border-transparent focus:bg-white focus:border-red-500/30 rounded-2xl outline-none transition-all font-black uppercase text-[10px] tracking-widest text-red-600 placeholder:text-gray-300 shadow-inner"
+                                className="w-full px-4 sm:px-6 py-2.5 sm:py-4 bg-gray-50 border border-transparent focus:bg-white focus:border-red-500/30 rounded-xl sm:rounded-2xl outline-none transition-all font-black uppercase text-[8px] sm:text-[10px] tracking-widest text-red-600 placeholder:text-gray-300 shadow-inner"
                                 onKeyDown={(e) => {
                                     if (e.key === "Enter") onConfirm(inputValue);
                                 }}
@@ -75,20 +75,20 @@ const CustomModal = ({
                     )}
                 </div>
 
-                <div className="p-8 pt-0 flex gap-4">
+                <div className="p-4 sm:p-8 pt-0 flex gap-2 sm:gap-4">
                     {(type === "confirm" || type === "prompt") && (
                         <button
                             onClick={onClose}
-                            className="flex-1 px-6 py-4 rounded-2xl bg-gray-50 text-gray-400 font-black uppercase text-[10px] tracking-widest hover:bg-gray-100 transition-all border border-transparent"
+                            className="flex-1 px-4 sm:px-6 py-2.5 sm:py-4 rounded-xl sm:rounded-2xl bg-gray-50 text-gray-400 font-black uppercase text-[8px] sm:text-[10px] tracking-widest hover:bg-gray-100 transition-all border border-transparent"
                         >
                             {cancelText}
                         </button>
                     )}
                     <button
                         onClick={() => onConfirm(type === "prompt" ? inputValue : true)}
-                        className="flex-1 px-6 py-4 rounded-2xl bg-red-600 text-white font-black uppercase text-[10px] tracking-[0.3em] hover:bg-red-700 shadow-lg shadow-red-200 transition-all active:scale-95 flex items-center justify-center gap-2"
+                        className="flex-1 px-4 sm:px-6 py-2.5 sm:py-4 rounded-xl sm:rounded-2xl bg-red-600 text-white font-black uppercase text-[8px] sm:text-[10px] tracking-[0.2em] sm:tracking-[0.3em] hover:bg-red-700 shadow-lg shadow-red-200 transition-all active:scale-95 flex items-center justify-center gap-1.5 sm:gap-2"
                     >
-                        <Check className="w-4 h-4" />
+                        <Check className="w-3 h-3 sm:w-4 sm:h-4" />
                         <span>{confirmText}</span>
                     </button>
                 </div>

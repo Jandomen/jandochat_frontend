@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Archive, Trash2, Eye, Clock, Film, Image } from "lucide-react";
+import { Archive, Trash2, Eye, Film } from "lucide-react";
 import { getArchivedStories, deleteArchivedStory } from "../../api/stories";
 import { useModal } from "../../context/ModalContext";
 import { useToast } from "../../context/ToastContext";
@@ -46,70 +46,59 @@ export default function StoryArchive() {
     }
 
     return (
-        <div className="bg-white border border-red-50 rounded-[3rem] p-8 shadow-xl shadow-red-100/20">
-            <h2 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-3">
-                <Archive className="w-6 h-6 text-red-600" />
-                <span>Archivo de Historias</span>
-            </h2>
+        <div className="bg-white border border-gray-100 rounded-[2rem] p-4 sm:p-6 shadow-sm">
+            <div className="flex items-center gap-2 mb-4">
+                <Archive className="w-4 h-4 text-red-600" />
+                <span className="text-[9px] sm:text-xs font-black uppercase tracking-widest text-gray-900">Archivo de Historias</span>
+            </div>
 
             {stories.length === 0 ? (
-                <div className="py-12 text-center opacity-20">
-                    <Archive className="w-16 h-16 mx-auto mb-4" />
-                    <p className="font-black uppercase tracking-widest text-xs">No hay historias archivadas</p>
+                <div className="py-8 text-center opacity-10">
+                    <Archive className="w-10 h-10 mx-auto mb-2" />
+                    <p className="font-black uppercase tracking-widest text-[8px]">Vacío</p>
                 </div>
             ) : (
-                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-3">
+                <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">
                     {stories.map((story) => (
-                        <div key={story._id} className="relative group aspect-[9/16] bg-gray-100 rounded-2xl overflow-hidden cursor-pointer">
+                        <div key={story._id} className="relative group aspect-[9/16] bg-gray-50 rounded-xl overflow-hidden cursor-pointer border border-gray-100/50">
                             {/* Thumbnail */}
                             {story.tipo === "video" ? (
                                 <div className="w-full h-full bg-gray-900 flex items-center justify-center">
                                     {story.thumbnail ? (
                                         <img src={story.thumbnail} className="w-full h-full object-cover" alt="" />
                                     ) : (
-                                        <Film className="w-8 h-8 text-gray-600" />
+                                        <Film className="w-4 h-4 text-gray-600" />
                                     )}
-                                    <div className="absolute top-2 left-2">
-                                        <Film className="w-4 h-4 text-white drop-shadow" />
-                                    </div>
                                 </div>
                             ) : (
-                                <>
-                                    <img src={story.url} className="w-full h-full object-cover" alt="" />
-                                    <div className="absolute top-2 left-2">
-                                        <Image className="w-4 h-4 text-white drop-shadow" />
-                                    </div>
-                                </>
+                                <img src={story.url} className="w-full h-full object-cover" alt="" />
                             )}
 
-                            {/* Date badge */}
-                            <div className="absolute bottom-2 left-2 right-2">
-                                <div className="bg-black/60 text-white text-[8px] font-bold px-2 py-1 rounded-lg flex items-center gap-1 backdrop-blur-sm">
-                                    <Clock className="w-2.5 h-2.5" />
-                                    {new Date(story.createdAt).toLocaleDateString()}
+                            {/* Info overlay (always visible mini) */}
+                            <div className="absolute bottom-1 left-1 right-1 flex justify-between items-center">
+                                <span className="bg-black/40 text-white text-[5px] font-bold px-1 py-0.5 rounded-sm backdrop-blur-[2px]">
+                                    {new Date(story.createdAt).toLocaleDateString([], {day: '2-digit', month: '2-digit'})}
+                                </span>
+                                <div className="bg-red-600/80 text-white text-[5px] font-bold px-1 py-0.5 rounded-sm flex items-center gap-0.5">
+                                    <Eye className="w-1.5 h-1.5" />
+                                    {story.viewers?.length || 0}
                                 </div>
                             </div>
 
-                            {/* Hover overlay */}
-                            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/50 transition-all flex items-center justify-center gap-3 opacity-0 group-hover:opacity-100">
+                            {/* Hover Actions */}
+                            <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
                                 <button
                                     onClick={() => setSelectedStory(story)}
-                                    className="p-2 bg-white/20 rounded-full text-white hover:bg-white/30 transition-all"
+                                    className="p-1.5 bg-white/20 rounded-lg text-white hover:bg-white/40 border border-white/20"
                                 >
-                                    <Eye className="w-5 h-5" />
+                                    <Eye className="w-3 h-3" />
                                 </button>
                                 <button
                                     onClick={(e) => { e.stopPropagation(); handleDelete(story._id); }}
-                                    className="p-2 bg-red-600/80 rounded-full text-white hover:bg-red-700 transition-all"
+                                    className="p-1.5 bg-red-600/60 rounded-lg text-white hover:bg-red-600 border border-white/10"
                                 >
-                                    <Trash2 className="w-5 h-5" />
+                                    <Trash2 className="w-3 h-3" />
                                 </button>
-                            </div>
-
-                            {/* Views count */}
-                            <div className="absolute top-2 right-2 bg-black/40 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full flex items-center gap-1">
-                                <Eye className="w-2.5 h-2.5" />
-                                {story.viewers?.length || 0}
                             </div>
                         </div>
                     ))}

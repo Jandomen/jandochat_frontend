@@ -261,14 +261,14 @@ export default function Usuarios() {
   };
 
   const SuggestionsSlider = () => (
-    <div className="bg-white rounded-[2.5rem] border border-red-600/5 p-8 shadow-xl shadow-red-100/10 overflow-hidden relative mb-4 mt-2">
-      <div className="absolute top-0 right-0 p-4 opacity-5">
-        <Flame className="w-20 h-20 text-red-600" />
+    <div className="bg-white rounded-2xl sm:rounded-[2.5rem] border border-red-600/5 p-2 sm:p-8 shadow-xl shadow-red-100/10 overflow-hidden relative mb-3 mt-1">
+      <div className="absolute top-0 right-0 p-3 sm:p-4 opacity-5">
+        <Flame className="w-16 h-16 sm:w-20 sm:h-20 text-red-600" />
       </div>
 
-      <div className="flex items-center gap-3 mb-8 relative z-10">
-        <Users className="w-5 h-5 text-red-600" />
-        <h3 className="text-lg font-black text-gray-900 tracking-tight">Sugerencias</h3>
+      <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-8 relative z-10">
+        <Users className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-red-600" />
+        <h3 className="text-xs sm:text-lg font-black text-gray-900 tracking-tight">Sugerencias</h3>
       </div>
 
       <Slider
@@ -281,32 +281,32 @@ export default function Usuarios() {
         slidesToScroll={1}
       >
         {usuariosAleatorios.map((u) => (
-          <div key={u._id} className="p-2">
-            <div className="bg-gray-50/50 rounded-[2rem] p-6 text-center border border-red-50 space-y-4">
+          <div key={u._id} className="p-1 sm:p-2">
+            <div className="bg-gray-50/50 rounded-xl sm:rounded-[2rem] p-2 sm:p-6 text-center border border-red-50 space-y-2 sm:space-y-4">
               <img
                 src={u.fotoPerfil || "/assets/Custom-Icon-Design-Pretty-Office-8-User-red.256.png"}
                 alt={u.nombre}
-                className="w-24 h-24 mx-auto rounded-[1.5rem] object-cover shadow-lg border-4 border-white cursor-pointer hover:scale-110 transition-transform"
+                className="w-12 h-12 sm:w-24 sm:h-24 mx-auto rounded-lg sm:rounded-[1.5rem] object-cover shadow-lg border sm:border-4 border-white cursor-pointer hover:scale-110 transition-transform"
                 onClick={() => navigate(`/usuarios/${u._id}`)}
               />
               <div>
-                <p className="font-black text-gray-900 text-lg">{u.nombre}</p>
-                <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">{u.seguidores?.length || 0} Seguidores</p>
+                <p className="font-black text-gray-900 text-xs sm:text-lg leading-tight">{u.nombre}</p>
+                <p className="text-[8px] sm:text-[10px] font-bold uppercase tracking-widest text-gray-400">{u.seguidores?.length || 0} Seguidores</p>
               </div>
 
               {yaLoSigo(u) ? (
                 <button
-                  className="w-full py-4 bg-red-100 text-red-600 font-black uppercase tracking-widest text-[10px] rounded-xl hover:bg-red-200 transition-all"
+                  className="w-full py-2 sm:py-4 bg-red-100 text-red-600 font-black uppercase tracking-widest text-[8px] sm:text-[10px] rounded-lg sm:rounded-xl hover:bg-red-200 transition-all"
                   onClick={() => handleDejarDeSeguir(u._id)}
                 >
                   Siguiendo
                 </button>
               ) : (
                 <button
-                  className="w-full py-4 bg-red-600 text-white font-black uppercase tracking-widest text-[10px] rounded-xl shadow-lg shadow-red-200 hover:bg-red-700 hover:scale-[1.02] transition-all"
+                  className="w-full py-2 sm:py-4 bg-red-600 text-white font-black uppercase tracking-widest text-[8px] sm:text-[10px] rounded-lg sm:rounded-xl shadow-lg shadow-red-200 hover:bg-red-700 hover:scale-[1.02] transition-all"
                   onClick={() => handleSeguir(u._id)}
                 >
-                  Seguir Usuario
+                  Seguir
                 </button>
               )}
             </div>
@@ -317,38 +317,38 @@ export default function Usuarios() {
   );
 
   return (
-    <div className="max-w-7xl mx-auto px-4 py-10">
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+    <div className="max-w-7xl mx-auto px-1.5 sm:px-4 py-2 sm:py-10">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-3 sm:gap-10">
 
         {/* Left Column: Feed */}
-        <div className="lg:col-span-2 space-y-8">
-          <div className="flex items-center gap-4 mb-4">
-            <div className="p-3 bg-red-600 text-white rounded-2xl shadow-lg shadow-red-200">
-              <Newspaper className="w-6 h-6" />
+        <div className="lg:col-span-2 space-y-3 sm:space-y-8">
+          <div className="flex items-center gap-2 sm:gap-4 mb-2">
+            <div className="p-1.5 sm:p-3 bg-red-600 text-white rounded-lg sm:rounded-2xl shadow-lg shadow-red-200">
+              <Newspaper className="w-3.5 h-3.5 sm:w-6 sm:h-6" />
             </div>
             <div>
-              <h1 className="text-3xl font-black text-gray-900 tracking-tight">🪐 Explora el Universo</h1>
-              <p className="text-gray-400 font-bold uppercase text-[10px] tracking-[0.3em]">Conéctate con la galaxia</p>
+              <h1 className="text-base sm:text-3xl font-black text-gray-900 tracking-tight">🪐 Explora</h1>
+              <p className="text-gray-400 font-bold uppercase text-[7px] sm:text-[10px] tracking-[0.3em]">Conéctate con la galaxia</p>
             </div>
           </div>
 
           <StoryBar />
 
           {/* Search Section moved here */}
-          <div className="bg-white rounded-[2.5rem] border border-red-50 p-8 shadow-xl shadow-red-100/10 mb-8">
-            <div className="flex items-center gap-3 mb-6">
-              <Search className="w-5 h-5 text-red-600" />
-              <h3 className="text-lg font-black text-gray-900 tracking-tight">Encuentra Amigos</h3>
+          <div className="bg-white rounded-2xl sm:rounded-[2.5rem] border border-red-50 p-2 sm:p-8 shadow-xl shadow-red-100/10 mb-3 sm:mb-8">
+            <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-6">
+              <Search className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-red-600" />
+              <h3 className="text-sm sm:text-lg font-black text-gray-900 tracking-tight">Amigos</h3>
             </div>
 
-            <div className="relative group mb-6">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 transition-colors group-focus-within:text-red-500" />
+            <div className="relative group mb-3 sm:mb-6">
+              <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3 h-3 sm:w-4 sm:h-4 text-gray-400 transition-colors group-focus-within:text-red-500" />
               <input
                 type="text"
-                placeholder="Nombre o @usuario..."
+                placeholder="Buscar..."
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="w-full pl-12 pr-6 py-4 bg-gray-50/50 border-transparent rounded-2xl text-sm focus:bg-white focus:ring-4 focus:ring-red-50 transition-all outline-none italic"
+                className="w-full pl-8 sm:pl-12 pr-4 sm:pr-6 py-2 sm:py-4 bg-gray-50/50 border-transparent rounded-xl sm:rounded-2xl text-[10px] sm:text-sm focus:bg-white focus:ring-4 focus:ring-red-50 transition-all outline-none italic"
               />
             </div>
 
@@ -359,33 +359,33 @@ export default function Usuarios() {
             ) : (search.trim() ? resultados : historial).length > 0 && (
               <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
                 <div className="flex items-center justify-between mb-2">
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                  <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
                     {search.trim() ? "Resultados de búsqueda" : "Búsquedas recientes"}
                   </p>
                   {!search.trim() && historial.length > 0 && (
-                    <button onClick={() => setHistorial([])} className="text-[10px] font-black text-red-600 uppercase tracking-widest hover:underline">Limpiar todo</button>
+                    <button onClick={() => setHistorial([])} className="text-[9px] font-black text-red-600 uppercase tracking-widest hover:underline">Limpiar todo</button>
                   )}
                 </div>
                 {(search.trim() ? resultados : historial).map((usuario) => (
                   <div
                     key={usuario._id}
                     onClick={() => addToHistory(usuario)}
-                    className="group flex items-center gap-4 p-4 rounded-3xl hover:bg-red-50 cursor-pointer transition-all border border-transparent hover:border-red-100 bg-gray-50/20"
+                    className="group flex items-center gap-2 sm:gap-4 p-2 sm:p-4 rounded-xl sm:rounded-3xl hover:bg-red-50 cursor-pointer transition-all border border-transparent hover:border-red-100 bg-gray-50/20"
                   >
                     <img
                       src={usuario.fotoPerfil || "/assets/Custom-Icon-Design-Pretty-Office-8-User-red.256.png"}
-                      className="w-10 h-10 rounded-2xl object-cover shadow-sm group-hover:scale-105 transition-transform"
+                      className="w-7 h-7 sm:w-10 sm:h-10 rounded-lg sm:rounded-2xl object-cover shadow-sm group-hover:scale-105 transition-transform"
                       alt=""
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="font-black text-gray-900 truncate text-sm">{usuario.nombre}</p>
-                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">@{usuario.username || 'usuario'}</p>
+                      <p className="font-black text-gray-900 truncate text-[10px] sm:text-sm">{usuario.nombre}</p>
+                      <p className="text-[7px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-widest">@{usuario.username || 'usuario'}</p>
                     </div>
                     {search.trim() ? (
-                      <UserPlus className="w-4 h-4 text-gray-200 group-hover:text-red-600 transition-colors" />
+                      <UserPlus className="w-3 h-3 text-gray-200 group-hover:text-red-600 transition-colors" />
                     ) : (
-                      <button onClick={(e) => removeFromHistory(e, usuario._id)} className="p-2 hover:bg-red-100 rounded-xl text-gray-300 hover:text-red-600 transition-all">
-                        <X className="w-4 h-4" />
+                      <button onClick={(e) => removeFromHistory(e, usuario._id)} className="p-1 hover:bg-red-100 rounded-lg text-gray-300 hover:text-red-600 transition-all">
+                        <X className="w-3 h-3" />
                       </button>
                     )}
                   </div>
@@ -398,9 +398,9 @@ export default function Usuarios() {
 
           <div className="space-y-6">
             {feed.length === 0 ? (
-              <div className="bg-white rounded-[3rem] p-20 text-center border-2 border-dashed border-red-100 opacity-50">
-                <Users className="w-16 h-16 text-red-200 mx-auto mb-4" />
-                <p className="text-gray-400 font-black">Tu feed está vacío. ¡Sigue a alguien!</p>
+              <div className="bg-white rounded-[2rem] sm:rounded-[3rem] p-10 sm:p-20 text-center border-2 border-dashed border-red-100 opacity-50">
+                <Users className="w-12 h-12 sm:w-16 sm:h-16 text-red-200 mx-auto mb-4" />
+                <p className="text-gray-400 font-black text-sm sm:text-base">Tu feed está vacío. ¡Sigue a alguien!</p>
               </div>
             ) : (
               feed.map((post, index) => (

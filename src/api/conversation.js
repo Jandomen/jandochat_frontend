@@ -9,10 +9,11 @@ export const buscarConversacionPrivada = async (userId) => {
     const conversaciones = res.data;
 
     const conversacionExistente = conversaciones.find((c) => {
+      const idsParticipantes = c.participantes.map(p => (typeof p === 'string' ? p : p._id)?.toString());
       return (
         !c.esGrupo &&
-        c.participantes.length === 2 &&
-        c.participantes.some((p) => p._id === userId)
+        idsParticipantes.length === 2 &&
+        idsParticipantes.includes(userId.toString())
       );
     });
 

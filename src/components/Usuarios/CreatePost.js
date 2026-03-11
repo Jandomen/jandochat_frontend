@@ -1,6 +1,7 @@
 import React, { useState, useRef } from "react";
 import { Send, Smile, Plus, Trash2, Scissors, Loader2 } from "lucide-react";
 import { uploadMedia } from "../../api/posts";
+import MediaPickerModal from "../UI/MediaPickerModal";
 
 export default function CreatePost({ onPost }) {
     const [contenido, setContenido] = useState("");
@@ -8,6 +9,7 @@ export default function CreatePost({ onPost }) {
     const [errorStatus, setErrorStatus] = useState("");
     const [isUploading, setIsUploading] = useState(false);
     const [showEmojis, setShowEmojis] = useState(false);
+    const [isPickerOpen, setIsPickerOpen] = useState(false);
 
     const commonEmojis = ["😊", "😂", "🥰", "😎", "🔥", "✨", "🙌", "🤔", "👍", "❤️", "⚡", "🚀", "🌈", "👀", "💯"];
 
@@ -69,19 +71,32 @@ export default function CreatePost({ onPost }) {
     };
 
     return (
-        <div className="bg-white rounded-[3.5rem] border border-red-50 p-10 shadow-2xl shadow-red-100/20 mb-12 relative overflow-hidden group">
+        <div className="bg-white rounded-2xl sm:rounded-[3.5rem] border border-red-50 p-3 sm:p-10 shadow-xl shadow-red-100/10 mb-4 sm:mb-12 relative overflow-hidden group">
+            <MediaPickerModal 
+                isOpen={isPickerOpen} 
+                onClose={() => setIsPickerOpen(false)} 
+                onSelect={(type) => {
+                    if (type === 'camera') {
+                        fileInputRef.current.setAttribute('capture', 'environment');
+                    } else {
+                        fileInputRef.current.removeAttribute('capture');
+                    }
+                    setTimeout(() => fileInputRef.current.click(), 100);
+                }}
+                filter={["camera", "gallery"]}
+            />
             <div className="absolute top-0 right-0 w-48 h-48 bg-red-600/5 rounded-full -mr-24 -mt-24 transition-transform group-hover:scale-125"></div>
 
             <div className="relative z-10">
-                <div className="flex items-center justify-between mb-8">
-                    <h3 className="text-2xl font-black text-gray-900 tracking-tight">Comparte algo nuevo</h3>
-                    {errorStatus && <span className="text-[10px] font-black uppercase text-red-500 bg-red-50 px-4 py-2 rounded-full animate-bounce">{errorStatus}</span>}
+                <div className="flex items-center justify-between mb-1.5 sm:mb-8">
+                    <h3 className="text-[10px] sm:text-2xl font-black text-gray-900 tracking-tight uppercase">Publicar</h3>
+                    {errorStatus && <span className="text-[7px] sm:text-[10px] font-black uppercase text-red-500 bg-red-50 px-2 sm:px-4 py-1 sm:py-2 rounded-full animate-bounce">{errorStatus}</span>}
                 </div>
 
-                <form onSubmit={handleSubmit} className="space-y-8">
+                <form onSubmit={handleSubmit} className="space-y-2 sm:space-y-8">
                     <textarea
-                        className="w-full h-40 p-8 bg-gray-50/50 rounded-[3rem] border-transparent focus:bg-white focus:ring-8 focus:ring-red-50 outline-none text-xl transition-all resize-none font-medium placeholder:text-gray-300"
-                        placeholder="¿En qué estás pensando?"
+                        className="w-full h-12 sm:h-40 p-2 sm:p-8 bg-gray-50/50 rounded-lg sm:rounded-[3rem] border-transparent focus:bg-white focus:ring-4 sm:focus:ring-8 focus:ring-red-50 outline-none text-[12px] sm:text-xl transition-all resize-none font-medium placeholder:text-gray-300"
+                        placeholder="¿Qué tienes en mente?"
                         value={contenido}
                         onChange={(e) => setContenido(e.target.value)}
                     />
@@ -113,7 +128,7 @@ export default function CreatePost({ onPost }) {
                             {mediaList.length < 10 && (
                                 <button
                                     type="button"
-                                    onClick={() => fileInputRef.current.click()}
+                                    onClick={() => setIsPickerOpen(true)}
                                     className="w-32 h-32 rounded-[1.5rem] bg-red-50/30 border-2 border-dashed border-red-200 flex flex-col items-center justify-center text-red-300 hover:bg-red-50 hover:text-red-600 transition-all gap-2"
                                 >
                                     <Plus className="w-8 h-8" />
@@ -133,23 +148,23 @@ export default function CreatePost({ onPost }) {
                     />
 
                     <div className="flex items-center justify-between">
-                        <div className="flex gap-3">
+                        <div className="flex gap-2 sm:gap-3">
                             <button
                                 type="button"
-                                onClick={() => fileInputRef.current.click()}
-                                className="flex items-center gap-3 px-6 py-4 rounded-2xl bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-500 font-black text-[10px] uppercase tracking-widest transition-all shadow-sm"
+                                onClick={() => setIsPickerOpen(true)}
+                                className="flex items-center gap-2 sm:gap-3 px-3 sm:px-6 py-2 sm:py-4 rounded-lg sm:rounded-2xl bg-gray-50 text-gray-400 hover:text-red-500 font-black text-[8px] sm:text-[10px] uppercase tracking-widest transition-all shadow-sm"
                             >
-                                <Scissors className="w-5 h-5 -rotate-90" />
-                                <span className="hidden sm:inline">Adjuntar</span>
+                                <Scissors className="w-3.5 h-3.5 sm:w-5 sm:h-5 -rotate-90" />
+                                <span className="hidden sm:inline">Media</span>
                             </button>
 
                             <div className="relative">
                                 <button
                                     type="button"
                                     onClick={() => setShowEmojis(!showEmojis)}
-                                    className={`p-4 transition-all rounded-2xl ${showEmojis ? 'bg-red-600 text-white shadow-lg' : 'bg-gray-50 text-gray-300 hover:text-red-500'}`}
+                                    className={`p-2 sm:p-4 transition-all rounded-lg sm:rounded-2xl ${showEmojis ? 'bg-red-600 text-white shadow-lg' : 'bg-gray-50 text-gray-300 hover:text-red-500'}`}
                                 >
-                                    <Smile className="w-6 h-6" />
+                                    <Smile className="w-4 h-4 sm:w-6 sm:h-6" />
                                 </button>
 
                                 {showEmojis && (
@@ -175,17 +190,14 @@ export default function CreatePost({ onPost }) {
                         <button
                             type="submit"
                             disabled={(!contenido.trim() && mediaList.length === 0) || isUploading}
-                            className="flex items-center gap-4 px-10 py-5 bg-red-600 text-white font-black uppercase tracking-[0.3em] text-[10px] rounded-[1.5rem] shadow-2xl shadow-red-200 hover:bg-red-700 hover:scale-105 active:scale-95 transition-all disabled:opacity-50 disabled:scale-100"
+                            className="flex items-center gap-2 sm:gap-4 px-4 py-2 sm:px-10 sm:py-5 bg-red-600 text-white font-black uppercase tracking-widest text-[9px] sm:text-[10px] rounded-lg sm:rounded-[1.5rem] shadow-lg shadow-red-200 hover:bg-red-700 active:scale-95 transition-all disabled:opacity-50"
                         >
                             {isUploading ? (
-                                <>
-                                    <Loader2 className="w-5 h-5 animate-spin" />
-                                    <span>Subiendo...</span>
-                                </>
+                                <Loader2 className="w-4 h-4 animate-spin" />
                             ) : (
                                 <>
-                                    <span>Publicar Ahora</span>
-                                    <Send className="w-5 h-5" />
+                                    <span className="truncate tracking-tighter uppercase">Publicar</span>
+                                    <Send className="w-3.5 h-3.5" />
                                 </>
                             )}
                         </button>

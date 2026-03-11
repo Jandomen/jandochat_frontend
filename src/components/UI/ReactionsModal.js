@@ -63,41 +63,41 @@ export default function ReactionsModal({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Header */}
-        <div className="p-4 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-red-600 to-red-500 shrink-0">
-          <h3 className="font-bold text-white text-lg">Reacciones</h3>
+        <div className="p-3 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-red-600 to-red-500 shrink-0">
+          <h3 className="font-black text-white text-xs uppercase tracking-widest">Reacciones</h3>
           <button 
             onClick={onClose}
             className="p-1 text-white/80 hover:text-white transition-colors"
           >
-            <X className="w-6 h-6" />
+            <X className="w-5 h-5" />
           </button>
         </div>
 
         {/* Reactions list */}
-        <div className="overflow-y-auto flex-1 p-2">
+        <div className="overflow-y-auto flex-1 p-1">
           {reactions && reactions.length > 0 ? (
             reactions.map((reaccion, idx) => (
               <div 
                 key={idx} 
-                className="flex items-center gap-3 p-3 hover:bg-gray-50 rounded-xl cursor-pointer transition-colors"
+                className="flex items-center gap-2 p-2 hover:bg-gray-50 rounded-xl cursor-pointer transition-colors"
                 onClick={() => handleUserClick(reaccion.usuario?._id)}
               >
                 <img 
                   src={reaccion.usuario?.fotoPerfil || "/assets/Custom-Icon-Design-Pretty-Office-8-User-red.256.png"} 
-                  className="w-10 h-10 rounded-full object-cover" 
+                  className="w-8 h-8 rounded-full object-cover shadow-sm" 
                   alt="" 
                 />
-                <div className="flex-1">
-                  <p className="font-medium text-gray-900 text-sm">{reaccion.usuario?.nombre}</p>
-                  <p className="text-gray-500 text-xs">{REACTION_LABELS[reaccion.tipo]}</p>
+                <div className="flex-1 min-w-0">
+                  <p className="font-black text-gray-900 text-[10px] leading-tight truncate">{reaccion.usuario?.nombre}</p>
+                  <p className="text-gray-400 text-[8px] font-bold uppercase tracking-tighter truncate">{REACTION_LABELS[reaccion.tipo]}</p>
                 </div>
-                <span className="text-xl">{EMOJIS[reaccion.tipo]}</span>
+                <span className="text-base sm:text-lg">{EMOJIS[reaccion.tipo]}</span>
               </div>
             ))
           ) : (
-            <p className="text-center text-gray-500 py-8"></p>
+            <div className="text-center text-gray-400 py-6 text-[10px] uppercase font-black tracking-widest">No hay reacciones</div>
           )}
-No hay reacciones        </div>
+        </div>
       </div>
     </div>
   );

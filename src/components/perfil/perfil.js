@@ -15,8 +15,10 @@ import {
   deleteComentario
 } from "../../api/posts";
 import { Link } from "react-router-dom";
-import { Users, Mail, Calendar, MapPin, Edit3, ChevronRight, Newspaper, Globe, Trash2, Camera } from "lucide-react";
+import { Users, Mail, MapPin, Edit3, ChevronRight, Newspaper, Trash2, Camera } from "lucide-react";
 import PostCard from "../Usuarios/PostCard";
+import ImageViewer from "../UI/ImageViewer";
+import MediaPickerModal from "../UI/MediaPickerModal";
 
 const Perfil = () => {
   const { user, setUser } = useAuth();
@@ -27,6 +29,9 @@ const Perfil = () => {
   const [posts, setPosts] = useState([]);
   const [activeTab, setActiveTab] = useState("publicaciones");
   const [loadingCover, setLoadingCover] = useState(false);
+  const [mediaFullscreen, setMediaFullscreen] = useState(false);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [currentSelectedMedia, setCurrentSelectedMedia] = useState([]);
   const coverInputRef = React.useRef(null);
 
   useEffect(() => {
@@ -166,141 +171,152 @@ const Perfil = () => {
     <Link
       key={usuario._id || usuario.id}
       to={`/usuarios/${usuario._id}`}
-      className="flex items-center justify-between p-4 bg-gray-50/50 hover:bg-red-50/50 rounded-3xl transition-all group"
+      className="flex items-center justify-between p-2.5 bg-gray-50/50 hover:bg-red-50/50 rounded-2xl transition-all group"
     >
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2.5">
         <img
           src={usuario.fotoPerfil || "/assets/Custom-Icon-Design-Pretty-Office-8-User-red.256.png"}
           alt={usuario.nombre}
-          className="w-12 h-12 rounded-2xl object-cover border-2 border-white shadow-sm group-hover:scale-105 transition-transform"
+          className="w-9 h-9 rounded-xl object-cover border-2 border-white shadow-sm group-hover:scale-105 transition-transform"
         />
         <div>
-          <p className="font-black text-gray-900 group-hover:text-red-700 transition-colors">{usuario.nombre}</p>
-          <p className="text-xs text-gray-400 font-bold uppercase tracking-widest">@{usuario.username || 'usuario'}</p>
+          <p className="font-black text-gray-900 group-hover:text-red-700 transition-colors text-[9px] sm:text-sm">{usuario.nombre}</p>
+          <p className="text-[6px] sm:text-[10px] text-gray-400 font-bold uppercase tracking-widest">@{usuario.username || 'usuario'}</p>
         </div>
       </div>
-      <ChevronRight className="w-5 h-5 text-gray-200 group-hover:text-red-300 transition-colors" />
+      <ChevronRight className="w-3 h-3 text-gray-200 group-hover:text-red-300 transition-colors" />
     </Link>
   );
 
   return (
-    <div className="max-w-4xl mx-auto pb-12">
+    <div className="max-w-4xl mx-auto space-y-4 sm:space-y-12 px-2 sm:px-4 sm:pt-8">
+      <MediaPickerModal 
+        isOpen={isPickerOpen} 
+        onClose={() => setIsPickerOpen(false)} 
+        onSelect={(type) => {
+          if (!coverInputRef.current) return;
+          if (type === 'camera') {
+            coverInputRef.current.setAttribute('capture', 'environment');
+          } else {
+            coverInputRef.current.removeAttribute('capture');
+          }
+          setTimeout(() => coverInputRef.current.click(), 100);
+        }}
+        filter={["camera", "gallery"]}
+      />
       {/* Cover Photo Section */}
-      <div className="relative h-64 md:h-80 w-full mt-6 rounded-[3rem] overflow-hidden group/cover shadow-2xl">
-        <img
-          src={user?.fotoPortada || "https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=2000&auto=format&fit=crop"}
-          alt="Portada"
-          className="w-full h-full object-cover transform transition-transform duration-700 group-hover/cover:scale-110"
-        />
-        <div className="absolute inset-0 bg-black/10 transition-all"></div>
-
-        <div className="absolute bottom-6 right-6 flex gap-3 z-20">
-          <button
-            onClick={() => coverInputRef.current.click()}
-            className="flex items-center gap-2 bg-white/95 backdrop-blur-md text-gray-900 px-4 py-2.5 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-2xl hover:bg-white hover:scale-105 transition-all active:scale-95 border border-red-50"
-            disabled={loadingCover}
-          >
-            {loadingCover ? <div className="w-4 h-4 border-2 border-red-600 border-t-transparent animate-spin rounded-full"></div> : <Camera className="w-4 h-4 text-red-600" />}
-            <span>{user?.fotoPortada ? "Cambiar Portada" : "Añadir Portada"}</span>
-          </button>
-
-          {user?.fotoPortada && (
+      <div className="relative w-full">
+        <div 
+          className="aspect-[21/9] sm:aspect-[4/1] rounded-2xl sm:rounded-[3rem] overflow-hidden shadow-lg group/cover relative bg-red-950 cursor-pointer z-10"
+          onClick={() => {
+            console.log("Cover clicked - Profile");
+            setCurrentSelectedMedia([{ url: user?.fotoPortada || "https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=2000&auto=format&fit=crop", tipo: "imagen" }]);
+            setMediaFullscreen(true);
+          }}
+        >
+          <img
+            src={user?.fotoPortada || "https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=2000&auto=format&fit=crop"}
+            alt="Portada"
+            className="w-full h-full object-cover transform transition-transform duration-700 group-hover/cover:scale-110 pointer-events-none"
+          />
+          <div className="absolute inset-0 bg-black/30 pointer-events-none"></div>
+          
+          <div className="absolute top-1.5 right-1.5 sm:top-6 sm:right-6 flex gap-1 z-30">
             <button
-              onClick={handleDeleteCover}
-              className="p-2.5 bg-red-600 text-white rounded-2xl shadow-2xl hover:bg-red-700 hover:scale-105 transition-all active:scale-95 border border-red-400"
-              title="Eliminar portada"
+              onClick={(e) => { e.stopPropagation(); setIsPickerOpen(true); }}
+              className="flex items-center gap-1 bg-white/95 backdrop-blur-md text-gray-900 px-1.5 py-1 sm:px-4 sm:py-3 rounded-md font-black text-[6px] sm:text-[10px] uppercase tracking-widest shadow-xl border border-red-50 active:scale-95 transition-all"
+              disabled={loadingCover}
             >
-              <Trash2 className="w-5 h-5" />
+              {loadingCover ? <div className="w-2 h-2 border-2 border-red-600 border-t-transparent animate-spin rounded-full"></div> : <Camera className="w-2.5 h-2.5 text-red-600" />}
+              <span>Edit</span>
             </button>
-          )}
+            {user?.fotoPortada && (
+              <button
+                onClick={handleDeleteCover}
+                className="p-1 sm:p-3 bg-red-600/90 backdrop-blur-sm text-white rounded-md shadow-xl border border-red-400 active:scale-95 transition-all"
+              >
+                <Trash2 className="w-2.5 h-2.5" />
+              </button>
+            )}
+          </div>
         </div>
 
-        <input
-          type="file"
-          ref={coverInputRef}
-          onChange={handleUpdateCover}
-          className="hidden"
-          accept="image/*"
-        />
-      </div>
-
-      <div className="relative -mt-20 px-6">
-        <div className="relative bg-white border border-red-50 rounded-[3rem] p-8 shadow-2xl shadow-red-100/20 overflow-hidden text-center md:text-left">
-          <div className="absolute -top-12 -right-12 w-48 h-48 bg-red-600/5 rounded-full"></div>
-          <div className="flex flex-col md:flex-row items-center md:items-start gap-8 relative z-10">
-            <div className="relative group/avatar">
-              <div className="absolute inset-0 bg-red-600 rounded-[2.5rem] blur-lg opacity-20 group-hover/avatar:opacity-40 transition-opacity"></div>
+        {/* Profile Card Overlay - Ultra Compact for 340px */}
+        <div className="bg-white/95 backdrop-blur-xl border border-red-500/5 rounded-2xl sm:rounded-[4rem] p-4 sm:p-12 -mt-10 sm:-mt-24 mx-2 sm:mx-16 shadow-2xl relative z-20 flex flex-col items-center">
+          <div className="relative -mt-16 sm:-mt-36 mb-4">
+            <div className="w-16 h-16 sm:w-44 sm:h-44 rounded-lg sm:rounded-[2.5rem] p-1 bg-white shadow-2xl relative group/avatar">
               <img
                 src={user?.fotoPerfil ? `${user.fotoPerfil}${user.fotoPerfil.includes('?') ? '&' : '?'}t=${Date.now()}` : "/assets/Custom-Icon-Design-Pretty-Office-8-User-red.256.png"}
-                alt="Perfil"
-                className="w-40 h-40 md:w-48 md:h-48 object-cover rounded-[2.5rem] border-4 border-white shadow-2xl relative z-10"
+                className="w-full h-full rounded-lg sm:rounded-[2rem] object-cover cursor-pointer"
+                alt=""
+                onClick={() => {
+                  setCurrentSelectedMedia([{ url: user?.fotoPerfil || "/assets/Custom-Icon-Design-Pretty-Office-8-User-red.256.png", tipo: "imagen" }]);
+                  setMediaFullscreen(true);
+                }}
               />
-              <Link to="/configuraciones" className="absolute bottom-2 right-2 z-20 p-3 bg-red-600 text-white rounded-2xl shadow-lg hover:bg-red-700 transition-all">
-                <Edit3 className="w-5 h-5" />
+              <Link to="/configuraciones" className="absolute -bottom-1 -right-1 z-20 p-1.5 sm:p-4 bg-red-600 text-white rounded-md sm:rounded-2xl shadow-xl border border-white active:scale-90 transition-all hover:bg-red-700">
+                <Edit3 className="w-2.5 h-2.5 sm:w-6 sm:h-6" />
               </Link>
             </div>
-            <div className="flex-1 pt-4">
-              <h1 className="text-4xl font-black text-gray-900 tracking-tight">{user?.nombre}</h1>
-              {user?.bio && (
-                <p className="text-gray-600 font-bold mt-2 text-sm">{user.bio}</p>
-              )}
-              <p className="text-red-600 font-black uppercase tracking-[0.2em] text-xs mt-1">Tu Espacio Personal</p>
-              <div className="flex flex-wrap justify-center md:justify-start gap-4 mt-6">
-                <div className="px-4 py-2 bg-gray-50 rounded-2xl border border-gray-100 text-sm font-bold text-gray-600 flex items-center gap-2">
-                  <Mail className="w-4 h-4 text-red-500" /> {user?.email}
-                </div>
-                {user?.createdAt && (
-                  <div className="px-4 py-2 bg-gray-50 rounded-2xl border border-gray-100 text-sm font-bold text-gray-600 flex items-center gap-2">
-                    <Calendar className="w-4 h-4 text-red-500" />
-                    {new Date(user.createdAt).toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' })}
-                  </div>
-                )}
-                {user?.ubicacion && (
-                  <div className="px-4 py-2 bg-gray-50 rounded-2xl border border-gray-100 text-sm font-bold text-gray-600 flex items-center gap-2">
-                    <MapPin className="w-4 h-4 text-red-500" /> {user.ubicacion}
-                  </div>
-                )}
-                {user?.sitioWeb && (
-                  <a href={user.sitioWeb.startsWith('http') ? user.sitioWeb : `https://${user.sitioWeb}`} target="_blank" rel="noopener noreferrer" className="px-4 py-2 bg-gray-50 rounded-2xl border border-gray-100 text-sm font-bold text-red-600 flex items-center gap-2 hover:bg-red-50 transition-colors">
-                    <Globe className="w-4 h-4" /> {user.sitioWeb.replace(/^https?:\/\//, '')}
-                  </a>
-                )}
+          </div>
+
+          <div className="w-full text-center">
+            <h1 className="text-base sm:text-5xl font-black text-gray-900 tracking-tighter leading-tight mb-0">{user?.nombre}</h1>
+            <p className="text-red-600 font-extrabold uppercase tracking-widest text-[7px] sm:text-sm mb-2">@{user?.username || user?.nombre?.replace(/\s+/g, '').toLowerCase()}</p>
+            {user?.bio && (
+              <p className="text-gray-500 font-medium text-[8px] sm:text-base mb-3 max-w-md mx-auto leading-relaxed italic px-2">"{user.bio}"</p>
+            )}
+            
+            <div className="flex flex-wrap justify-center gap-1.5 sm:gap-10 text-gray-400 mb-4 border-y border-red-500/10 py-2">
+              <div className="flex items-center gap-1">
+                <Mail className="w-2.5 h-2.5 text-red-500" />
+                <span className="text-[7px] sm:text-sm font-black uppercase tracking-tighter">{user?.email}</span>
               </div>
-              <div className="flex justify-center md:justify-start gap-8 mt-8 border-t border-gray-50 pt-6">
-                <div onClick={() => setActiveTab("publicaciones")} className="cursor-pointer group">
-                  <p className="text-2xl font-black text-gray-900 group-hover:text-red-600 transition-colors uppercase">{posts.length}</p>
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Publicaciones</p>
+              {user?.ubicacion && (
+                <div className="flex items-center gap-1">
+                  <MapPin className="w-2.5 h-2.5 text-red-500" />
+                  <span className="text-[7px] sm:text-sm font-black uppercase tracking-tighter">{user.ubicacion}</span>
                 </div>
-                <div onClick={() => setActiveTab("seguidores")} className="cursor-pointer group px-4 border-x border-gray-50">
-                  <p className="text-2xl font-black text-gray-900 group-hover:text-red-600 transition-colors uppercase">{seguidores.length}</p>
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Seguidores</p>
-                </div>
-                <div onClick={() => setActiveTab("siguiendo")} className="cursor-pointer group">
-                  <p className="text-2xl font-black text-gray-900 group-hover:text-red-600 transition-colors uppercase">{siguiendo.length}</p>
-                  <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Siguiendo</p>
-                </div>
+              )}
+            </div>
+
+            <div className="flex justify-center gap-3 sm:gap-20">
+              <div onClick={() => setActiveTab("publicaciones")} className="cursor-pointer group flex flex-col items-center">
+                <p className="text-sm sm:text-4xl font-black text-gray-900 group-hover:text-red-600 transition-colors uppercase">{posts.length}</p>
+                <p className="text-[6px] sm:text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Historias</p>
+              </div>
+              <div onClick={() => setActiveTab("seguidores")} className="cursor-pointer group flex flex-col items-center px-3 sm:px-8 border-x border-red-500/10">
+                <p className="text-sm sm:text-4xl font-black text-gray-900 group-hover:text-red-600 transition-colors uppercase">{seguidores.length}</p>
+                <p className="text-[6px] sm:text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Aliados</p>
+              </div>
+              <div onClick={() => setActiveTab("siguiendo")} className="cursor-pointer group flex flex-col items-center">
+                <p className="text-sm sm:text-4xl font-black text-gray-900 group-hover:text-red-600 transition-colors uppercase">{siguiendo.length}</p>
+                <p className="text-[6px] sm:text-[11px] font-black text-gray-400 uppercase tracking-[0.2em]">Siguiendo</p>
               </div>
             </div>
           </div>
         </div>
       </div>
 
-      <div className="mt-8 px-4">
-        <div className="flex gap-4 mb-6 overflow-x-auto scrollbar-hide pb-2">
+      <input type="file" ref={coverInputRef} onChange={handleUpdateCover} className="hidden" accept="image/*" />
+
+      {/* Tabs & Full Feed Area */}
+      <div className="space-y-3 pt-3">
+        <div className="flex gap-1.5 sm:gap-4 overflow-x-auto scrollbar-hide pb-1.5 justify-center sm:justify-start px-1.5">
           {["publicaciones", "seguidores", "siguiendo"].map(tab => (
             <button
               key={tab}
               onClick={() => setActiveTab(tab)}
-              className={`px-8 py-3 rounded-2xl font-black text-xs uppercase tracking-widest transition-all whitespace-nowrap ${activeTab === tab ? 'bg-red-600 text-white shadow-lg shadow-red-200' : 'bg-white text-gray-400 hover:text-red-600'}`}
+              className={`px-3 sm:px-10 py-1.5 sm:py-3.5 rounded-md sm:rounded-2xl font-black text-[8px] sm:text-xs uppercase tracking-widest transition-all whitespace-nowrap border ${activeTab === tab ? 'bg-red-600 text-white shadow-lg shadow-red-200 border-red-600' : 'bg-white text-gray-400 border-red-50 hover:text-red-600'}`}
             >
               {tab}
             </button>
           ))}
         </div>
 
-        <div>
+        <div className="min-h-[200px] px-1.5">
           {activeTab === "publicaciones" ? (
-            <div className="space-y-6">
+            <div className="space-y-2">
               {posts.length > 0 ? posts.map(p => (
                 <PostCard
                   key={p._id}
@@ -315,36 +331,46 @@ const Perfil = () => {
                   onDeleteComment={handleDeleteComment}
                 />
               )) : (
-                <div className="py-20 text-center opacity-20 border-2 border-dashed border-red-100 rounded-[3rem]">
-                  <Newspaper className="w-16 h-16 mx-auto mb-4" />
-                  <p className="font-black uppercase tracking-widest">No has publicado nada aún</p>
+                <div className="py-10 text-center border border-dashed border-red-50 rounded-xl opacity-30">
+                  <Newspaper className="w-8 h-8 mx-auto mb-2 text-gray-400" />
+                  <p className="font-black uppercase tracking-widest text-[7px] text-gray-400">Sin historias</p>
                 </div>
               )}
             </div>
           ) : activeTab === "seguidores" ? (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {seguidores.length > 0 ? seguidores.map(renderUsuario) : (
-                <div className="col-span-full py-20 text-center opacity-20">
-                  <Users className="w-16 h-16 mx-auto mb-4" />
-                  <p className="font-black uppercase tracking-widest">Nadie te sigue aún</p>
+                <div className="col-span-full py-10 text-center opacity-30">
+                  <Users className="w-8 h-8 mx-auto mb-2" />
+                  <p className="font-black uppercase tracking-widest text-[7px] text-gray-400">Sin aliados</p>
                 </div>
               )}
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {siguiendo.length > 0 ? siguiendo.map(renderUsuario) : (
-                <div className="col-span-full py-20 text-center opacity-20">
-                  <Users className="w-16 h-16 mx-auto mb-4" />
-                  <p className="font-black uppercase tracking-widest">No sigues a nadie</p>
+                <div className="col-span-full py-10 text-center opacity-30">
+                  <Users className="w-8 h-8 mx-auto mb-2" />
+                  <p className="font-black uppercase tracking-widest text-[7px] text-gray-400">Sin seguidos</p>
                 </div>
               )}
             </div>
           )}
         </div>
       </div>
+
+      {/* Fullscreen Media Viewer for Profile/Cover */}
+      {mediaFullscreen && (
+        <ImageViewer
+          media={currentSelectedMedia}
+          currentIndex={0}
+          onClose={() => setMediaFullscreen(false)}
+          onNext={() => {}}
+          onPrev={() => {}}
+        />
+      )}
     </div>
   );
-}
+};
 
 export default Perfil;
-

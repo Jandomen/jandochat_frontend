@@ -5,6 +5,7 @@ import { useToast } from "../../context/ToastContext";
 import { MessageSquare, Plus, Trash2, Clock, Search, X, Check, Film, Image as ImageIcon, Type } from "lucide-react";
 import useSocket from "../../hooks/useSocket";
 import api from "../../api/axios";
+import { uploadMedia } from "../../api/posts";
 
 export default function ConversacionesList({ onSeleccionar, onCrearConversacion }) {
   const [conversaciones, setConversaciones] = useState([]);
@@ -137,11 +138,21 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
 
   const handleCrearStatus = async () => {
     if (!nuevoStatus.trim() && !mediaArchivo && !videoCortado) return;
+
+    // Si es video y aún no se ha cortado (y es largo), forzar corte o esperar
+    if (tipoNuevoStatus === "video" && videoDuracion > 20 && !videoCortado) {
+      showErrorToast("Debes confirmar el recorte del video primero");
+      return;
+    }
+
+    setCargando(true);
     try {
       let mediaUrl = "";
       const archivoParaSubir = videoCortado || mediaArchivo;
+
       if (archivoParaSubir) {
-        mediaUrl = URL.createObjectURL(archivoParaSubir);
+        const uploaded = await uploadMedia([archivoParaSubir]);
+        mediaUrl = uploaded[0].url;
       }
 
       const data = await api.post("/api/status", {
@@ -150,6 +161,7 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
         mediaUrl: mediaUrl,
         duracionHoras: user?.configuracionStatus?.duracion || 24
       }).then(r => r.data);
+
       setStatuses([data, ...statuses]);
       setNuevoStatus("");
       setMediaArchivo(null);
@@ -158,8 +170,12 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
       setVideoDuracion(0);
       setVideoTiempoInicio(0);
       setMostrarModalStatus(false);
+      success("Estado publicado con éxito");
     } catch (err) {
-      console.error("Error al publicar estado");
+      console.error("Error al publicar estado:", err);
+      showErrorToast("Error al publicar estado");
+    } finally {
+      setCargando(false);
     }
   };
 
@@ -254,64 +270,64 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Header section with Search */}
-      <div className="p-8 pb-4 space-y-6">
+      <div className="p-2 sm:p-8 pb-2 sm:pb-4 space-y-2 sm:space-y-6">
         <div className="flex justify-between items-end">
           <div>
-            <h2 className="text-4xl font-black tracking-tighter text-gray-900 mb-1">Chats</h2>
-            <div className="flex items-center gap-2">
-              <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{conversaciones.length} Conversaciones</span>
+            <h2 className="text-lg sm:text-4xl font-black tracking-tighter text-gray-900 mb-0.5 sm:mb-1">Chats</h2>
+            <div className="flex items-center gap-1 sm:gap-2">
+              <div className="w-1 h-1 sm:w-2 sm:h-2 bg-green-500 rounded-full animate-pulse"></div>
+              <span className="text-[8px] sm:text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{conversaciones.length} Conversaciones</span>
             </div>
           </div>
           <button
             onClick={onCrearConversacion}
-            className="p-5 bg-gradient-to-br from-red-500 to-red-700 text-white rounded-3xl shadow-[0_15px_30px_rgba(220,38,38,0.3)] hover:shadow-[0_20px_40px_rgba(220,38,38,0.4)] hover:-translate-y-1 active:scale-95 transition-all group border-4 border-white"
+            className="p-2.5 sm:p-5 bg-gradient-to-br from-red-500 to-red-700 text-white rounded-lg sm:rounded-3xl shadow-lg sm:shadow-[0_15px_30px_rgba(220,38,38,0.3)] hover:-translate-y-1 active:scale-95 transition-all group border-2 sm:border-4 border-white"
           >
-            <Plus className="w-7 h-7 stroke-[3] transition-transform group-hover:rotate-90" />
+            <Plus className="w-3.5 h-3.5 sm:w-7 sm:h-7 stroke-[3] transition-transform group-hover:rotate-90" />
           </button>
         </div>
 
-        <div className="relative group shadow-sm rounded-3xl overflow-hidden">
-          <Search className="absolute left-5 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-300 group-focus-within:text-red-500 transition-colors" />
+        <div className="relative group shadow-sm rounded-xl sm:rounded-3xl overflow-hidden">
+          <Search className="absolute left-3.5 sm:left-5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-5 sm:h-5 text-gray-300 group-focus-within:text-red-500 transition-colors" />
           <input
             type="text"
             placeholder="Buscar..."
             value={filtro}
             onChange={(e) => setFiltro(e.target.value)}
-            className="w-full pl-14 pr-6 py-5 bg-gray-50 border-none rounded-3xl text-sm focus:bg-white focus:ring-4 focus:ring-red-50 transition-all outline-none font-medium placeholder:text-gray-300"
+            className="w-full pl-9 sm:pl-14 pr-4 sm:pr-6 py-2 sm:py-5 bg-gray-50 border-none rounded-lg sm:rounded-3xl text-[10px] sm:text-sm focus:bg-white focus:ring-4 focus:ring-red-50 transition-all outline-none font-medium placeholder:text-gray-300"
           />
         </div>
       </div>
 
       {/* Status section (Premium bubbles) */}
-      <div className="px-8 py-6 border-b border-red-50/50 bg-white/50 backdrop-blur-sm overflow-hidden">
-        <div className="flex gap-6 overflow-x-auto pb-4 scrollbar-hide">
+      <div className="px-2 sm:px-8 py-2 sm:py-6 border-b border-red-50/50 bg-white/50 backdrop-blur-sm overflow-hidden">
+        <div className="flex gap-2.5 sm:gap-6 overflow-x-auto pb-2 sm:pb-4 scrollbar-hide">
           <button
             onClick={() => { setTipoNuevoStatus("texto"); setMostrarModalStatus(true); }}
-            className="flex flex-col items-center gap-3 flex-shrink-0 group"
+            className="flex flex-col items-center gap-1 sm:gap-3 flex-shrink-0 group"
           >
-            <div className="relative w-20 h-20 p-[3px] rounded-[1.8rem] bg-gradient-to-tr from-gray-100 via-gray-200 to-gray-50 group-hover:from-red-300 group-hover:to-red-500 transition-all duration-500 shadow-lg shadow-gray-200/50 group-hover:shadow-red-200/50">
-              <div className="w-full h-full rounded-[1.6rem] bg-white flex items-center justify-center border-4 border-white overflow-hidden bg-gray-50/50">
-                <div className="bg-red-600 text-white p-2 rounded-full shadow-lg group-hover:scale-125 transition-transform">
-                  <Plus className="w-5 h-5 stroke-[4]" />
+            <div className="relative w-10 h-10 sm:w-20 sm:h-20 p-[1.5px] sm:p-[3px] rounded-lg sm:rounded-[1.8rem] bg-gradient-to-tr from-gray-100 via-gray-200 to-gray-50 group-hover:from-red-300 group-hover:to-red-500 transition-all duration-500 shadow-lg shadow-gray-200/50 group-hover:shadow-red-200/50">
+              <div className="w-full h-full rounded-[0.5rem] sm:rounded-[1.6rem] bg-white flex items-center justify-center border sm:border-4 border-white overflow-hidden bg-gray-50/50">
+                <div className="bg-red-600 text-white p-1 sm:p-2 rounded-full shadow-lg group-hover:scale-125 transition-transform">
+                  <Plus className="w-2.5 h-2.5 sm:w-5 sm:h-5 stroke-[4]" />
                 </div>
               </div>
             </div>
-            <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest transition-colors group-hover:text-red-600">Mi Estado</span>
+            <span className="text-[8px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest transition-colors group-hover:text-red-600">Mi Estado</span>
           </button>
 
           {statuses.map((status) => (
             <div
               key={status._id}
-              className="flex flex-col items-center gap-3 flex-shrink-0 cursor-pointer group"
+              className="flex flex-col items-center gap-1 sm:gap-3 flex-shrink-0 cursor-pointer group"
               onClick={() => {
                 setStatusSeleccionado(status);
                 marcarVisto(status._id);
                 if (status.usuario?._id === user?._id) verVistas(status._id);
               }}
             >
-              <div className="relative w-20 h-20 p-[3px] rounded-[1.8rem] bg-gradient-to-tr from-red-500 via-red-400 to-red-600 shadow-xl shadow-red-100 group-hover:scale-105 group-hover:-rotate-3 transition-all">
-                <div className="w-full h-full rounded-[1.6rem] border-4 border-white overflow-hidden shadow-inner bg-gray-100">
+              <div className="relative w-10 h-10 sm:w-20 sm:h-20 p-[1.5px] sm:p-[3px] rounded-lg sm:rounded-[1.8rem] bg-gradient-to-tr from-red-500 via-red-400 to-red-600 shadow-xl shadow-red-100 group-hover:scale-105 group-hover:-rotate-3 transition-all">
+                <div className="w-full h-full rounded-[0.5rem] sm:rounded-[1.6rem] border sm:border-4 border-white overflow-hidden shadow-inner bg-gray-100">
                   <img
                     src={status.usuario?.fotoPerfil || "/assets/Custom-Icon-Design-Pretty-Office-8-User-red.256.png"}
                     alt={status.usuario?.nombre}
@@ -319,11 +335,11 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
                   />
                 </div>
                 {/* Visual indicator for active status type */}
-                <div className="absolute -bottom-1 -right-1 bg-white p-1.5 rounded-xl shadow-lg border border-red-50">
-                  {status.tipo === 'video' ? <Film className="w-3 h-3 text-red-600" /> : status.tipo === 'imagen' ? <ImageIcon className="w-3 h-3 text-red-600" /> : <Type className="w-3 h-3 text-red-600" />}
+                <div className="absolute -bottom-0.5 sm:-bottom-1 -right-0.5 sm:-right-1 bg-white p-0.5 sm:p-1 rounded sm:rounded-xl shadow-lg border border-red-50">
+                  {status.tipo === 'video' ? <Film className="w-1.5 h-1.5 sm:w-3 sm:h-3 text-red-600" /> : status.tipo === 'imagen' ? <ImageIcon className="w-1.5 h-1.5 sm:w-3 sm:h-3 text-red-600" /> : <Type className="w-1.5 h-1.5 sm:w-3 sm:h-3 text-red-600" />}
                 </div>
               </div>
-              <span className="text-[10px] font-black text-gray-800 tracking-tight truncate w-20 text-center opacity-80 group-hover:opacity-100">
+              <span className="text-[8px] sm:text-[10px] font-black text-gray-800 tracking-tight truncate w-12 sm:w-20 text-center opacity-80 group-hover:opacity-100">
                 {status.usuario?.nombre.split(" ")[0]}
               </span>
             </div>
@@ -332,7 +348,7 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
       </div>
 
       {/* Main Conversations list */}
-      <div className="flex-1 overflow-y-auto px-6 py-4">
+      <div className="flex-1 overflow-y-auto px-2 sm:px-6 py-1 sm:py-4">
         {cargando ? (
           <div className="space-y-6 mt-4">
             {[1, 2, 3, 4].map(i => (
@@ -364,7 +380,7 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
                 <div
                   key={conv._id}
                   onClick={() => onSeleccionar(conv)}
-                  className="flex items-center gap-5 p-5 bg-white border border-transparent rounded-[2.5rem] cursor-pointer hover:bg-white hover:shadow-2xl hover:shadow-red-200/40 hover:border-red-50 transition-all group relative overflow-hidden"
+                  className="flex items-center gap-2.5 sm:gap-5 p-2 sm:p-5 bg-white border border-transparent rounded-xl sm:rounded-[2.5rem] cursor-pointer hover:bg-white hover:shadow-2xl hover:shadow-red-200/40 hover:border-red-50 transition-all group relative overflow-hidden"
                 >
                   <div className="absolute top-0 right-0 w-24 h-24 bg-red-600/5 rounded-full -mr-12 -mt-12 transition-transform group-hover:scale-110"></div>
 
@@ -372,14 +388,14 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
                     <img
                       src={otro?.fotoPerfil || "/assets/Custom-Icon-Design-Pretty-Office-8-User-red.256.png"}
                       alt="avatar"
-                      className="w-16 h-16 rounded-[1.5rem] object-cover shadow-lg group-hover:scale-105 transition-transform border-2 border-white"
+                      className="w-9 h-9 sm:w-16 sm:h-16 rounded-lg sm:rounded-[1.5rem] object-cover shadow-lg group-hover:scale-105 transition-transform border sm:border-2 border-white"
                     />
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 border-2 border-white rounded-full shadow-sm"></div>
+                    <div className="absolute -bottom-0.5 sm:-bottom-1 -right-0.5 sm:-right-1 w-2.5 h-2.5 sm:w-4 sm:h-4 bg-green-500 border sm:border-2 border-white rounded-full shadow-sm"></div>
                   </div>
 
                   <div className="flex-1 min-w-0 z-10">
-                    <div className="flex justify-between items-start mb-1">
-                      <h4 className="font-black text-gray-900 group-hover:text-red-700 transition-colors truncate text-base">
+                    <div className="flex justify-between items-start mb-0.5 sm:mb-1">
+                      <h4 className="font-black text-gray-900 group-hover:text-red-700 transition-colors truncate text-xs sm:text-base">
                         {otro?.nombre || "Usuario"}
                       </h4>
                       <div className="flex items-center gap-1 text-[10px] text-gray-400 font-black uppercase tracking-widest">
@@ -387,10 +403,10 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
                         <span>Reciente</span>
                       </div>
                     </div>
-                    <div className="text-sm text-gray-500 truncate font-medium">
+                    <div className="text-xs sm:text-sm text-gray-500 truncate font-medium">
                       {ultimoMsj ? (
                         <div className="flex items-center gap-2">
-                          {typeof ultimoMsj.emisor === 'string' ? (ultimoMsj.emisor === user?._id && <span className="text-[10px] font-black text-red-400 uppercase tracking-tighter">Tú:</span>) : (ultimoMsj.emisor?._id === user?._id && <span className="text-[10px] font-black text-red-400 uppercase tracking-tighter">Tú:</span>)}
+                          {typeof ultimoMsj.emisor === 'string' ? (ultimoMsj.emisor === user?._id && <span className="text-[9px] sm:text-[10px] font-black text-red-400 uppercase tracking-tighter">Tú:</span>) : (ultimoMsj.emisor?._id === user?._id && <span className="text-[9px] sm:text-[10px] font-black text-red-400 uppercase tracking-tighter">Tú:</span>)}
                           <span className="truncate">{ultimoMsj.contenido}</span>
                         </div>
                       ) : <span className="italic text-gray-300">Inicia la conversación...</span>}
@@ -417,17 +433,17 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
             {/* Header decor */}
             <div className="absolute top-0 right-0 w-64 h-64 bg-red-600/5 rounded-full -mr-32 -mt-32 blur-3xl" />
 
-            <div className="p-10 flex-1 overflow-y-auto z-10 space-y-8">
+            <div className="p-4 sm:p-10 flex-1 overflow-y-auto z-10 space-y-4 sm:space-y-8">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-4xl font-black text-gray-900 tracking-tighter">Compartir</h3>
-                  <p className="text-[10px] font-black uppercase tracking-[0.3em] text-red-500">Nuevo Estado</p>
+                  <h3 className="text-xl sm:text-4xl font-black text-gray-900 tracking-tighter leading-none">Comparte</h3>
+                  <p className="text-[8px] font-black uppercase tracking-[0.2em] text-red-500">Nuevo Estado</p>
                 </div>
                 <button
                   onClick={() => { setMostrarModalStatus(false); setMediaArchivo(null); setPreviewUrl(null); }}
-                  className="p-4 bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-500 rounded-2xl transition-all"
+                  className="p-2 sm:p-4 bg-gray-50 text-gray-400 hover:bg-red-50 hover:text-red-500 rounded-xl transition-all"
                 >
-                  <X className="w-6 h-6" />
+                  <X className="w-4 h-4 sm:w-6 sm:h-6" />
                 </button>
               </div>
 

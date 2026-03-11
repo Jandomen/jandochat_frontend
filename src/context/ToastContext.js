@@ -14,9 +14,9 @@ export const useToast = () => {
 export const ToastProvider = ({ children, navigate }) => {
     const [toasts, setToasts] = useState([]);
 
-    const addToast = useCallback((message, type = "info", duration = 4000, onClick = null) => {
+    const addToast = useCallback((message, type = "info", duration = 2000, fotoPerfil = null, onClick = null) => {
         const id = Date.now() + Math.random();
-        setToasts((prev) => [...prev, { id, message, type, onClick }]);
+        setToasts((prev) => [...prev, { id, message, type, fotoPerfil, onClick }]);
         
         if (duration > 0) {
             setTimeout(() => {
@@ -31,10 +31,10 @@ export const ToastProvider = ({ children, navigate }) => {
         setToasts((prev) => prev.filter((t) => t.id !== id));
     }, []);
 
-    const success = useCallback((message, duration, onClick) => addToast(message, "success", duration, onClick), [addToast]);
-    const error = useCallback((message, duration, onClick) => addToast(message, "error", duration, onClick), [addToast]);
-    const info = useCallback((message, duration, onClick) => addToast(message, "info", duration, onClick), [addToast]);
-    const warning = useCallback((message, duration, onClick) => addToast(message, "warning", duration, onClick), [addToast]);
+    const success = useCallback((message, duration = 2000, fotoPerfil, onClick) => addToast(message, "success", duration, fotoPerfil, onClick), [addToast]);
+    const error = useCallback((message, duration = 2000, fotoPerfil, onClick) => addToast(message, "error", duration, fotoPerfil, onClick), [addToast]);
+    const info = useCallback((message, duration = 2000, fotoPerfil, onClick) => addToast(message, "info", duration, fotoPerfil, onClick), [addToast]);
+    const warning = useCallback((message, duration = 2000, fotoPerfil, onClick) => addToast(message, "warning", duration, fotoPerfil, onClick), [addToast]);
 
     const handleToastClick = useCallback((toast) => {
         if (toast.onClick && navigate) {
@@ -61,7 +61,7 @@ const ToastContainer = ({ toasts, onRemove, onToastClick }) => {
     if (toasts.length === 0) return null;
 
     return (
-        <div className="fixed top-4 right-4 z-[9999] flex flex-col gap-2 max-w-sm w-full pointer-events-none">
+        <div className="fixed top-2 right-2 left-2 sm:left-auto sm:right-4 z-[9999] flex flex-col items-center sm:items-end gap-1 pointer-events-none">
             {toasts.map((toast) => (
                 <ToastItem 
                     key={toast.id} 
@@ -75,51 +75,71 @@ const ToastContainer = ({ toasts, onRemove, onToastClick }) => {
 };
 
 const ToastItem = ({ toast, onRemove, onClick }) => {
-    const icons = {
-        success: "✓",
-        error: "✕",
-        info: "ℹ",
-        warning: "!"
-    };
-    
-    const colors = {
-        success: "bg-green-500 border-green-600",
-        error: "bg-red-500 border-red-600",
-        info: "bg-blue-500 border-blue-600",
-        warning: "bg-yellow-500 border-yellow-600"
-    };
-
-    const iconsColors = {
-        success: "text-green-100",
-        error: "text-red-100",
-        info: "text-blue-100",
-        warning: "text-yellow-100"
+    const theme = {
+        success: { 
+            bg: "bg-red-500", 
+            text: "text-white",
+            progress: "bg-white/40"
+        },
+        error: { 
+            bg: "bg-red-600", 
+            text: "text-white",
+            progress: "bg-white/40"
+        },
+        info: { 
+            bg: "bg-white", 
+            text: "text-gray-900 border border-gray-100",
+            progress: "bg-red-500/20"
+        },
+        warning: { 
+            bg: "bg-yellow-400", 
+            text: "text-black",
+            progress: "bg-black/10"
+        }
     };
 
     const hasClickAction = toast.onClick && (toast.onClick.navigateTo || toast.onClick.action);
+    const activeTheme = theme[toast.type] || theme.info;
 
     return (
         <div 
             className={`
-                pointer-events-auto flex items-center gap-3 px-4 py-3 rounded-xl border shadow-lg 
-                ${colors[toast.type]} 
-                ${hasClickAction ? 'cursor-pointer hover:scale-105 transition-transform' : ''}
-                animate-in slide-in-from-right duration-300
+                pointer-events-auto relative overflow-hidden flex items-center gap-2 p-1 pl-1 pr-3 rounded-full shadow-lg backdrop-blur-md
+                ${activeTheme.bg} ${activeTheme.text}
+                ${hasClickAction ? 'cursor-pointer hover:scale-[1.05] active:scale-95 transition-all' : ''}
+                animate-in slide-in-from-top-2 sm:slide-in-from-right-2 duration-300
+                max-w-[200px]
             `}
             role="alert"
             onClick={hasClickAction ? onClick : undefined}
         >
-            <span className={`font-bold text-sm ${iconsColors[toast.type]}`}>{icons[toast.type]}</span>
-            <p className="text-white text-sm font-medium flex-1">{toast.message}</p>
-            <button 
-                onClick={(e) => {
-                    e.stopPropagation();
-                    onRemove(toast.id);
-                }}
-                className="text-white/70 hover:text-white transition-colors"
-            >
-                ✕
-            </button>
+            {/* User Avatar / Icon */}
+            <div className="shrink-0 w-6 h-6 rounded-full overflow-hidden border border-white/20 shadow-sm bg-white/10 flex items-center justify-center">
+                <img 
+                    src={toast.fotoPerfil || "/assets/Custom-Icon-Design-Pretty-Office-8-User-red.256.png"} 
+                    className="w-full h-full object-cover" 
+                    alt="" 
+                    onError={(e) => { e.target.src = "/assets/Custom-Icon-Design-Pretty-Office-8-User-red.256.png" }}
+                />
+            </div>
+
+            {/* Content Pill */}
+            <div className="flex-1 min-w-0 pr-1">
+                <p className="text-[8px] font-black uppercase tracking-tighter truncate leading-none">
+                    {toast.message}
+                </p>
+            </div>
+
+            {/* Micro Progress Bar (2s) */}
+            <div className="absolute bottom-0 left-0 right-0 h-[1px]">
+                <div 
+                    className={`h-full ${activeTheme.progress}`}
+                    style={{ 
+                        animation: 'progress 2s linear forwards',
+                        width: '0%'
+                    }}
+                />
+            </div>
         </div>
     );
 };

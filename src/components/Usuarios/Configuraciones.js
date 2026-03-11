@@ -5,9 +5,7 @@ import { useModal } from "../../context/ModalContext";
 import { useToast } from "../../context/ToastContext";
 import {
   uploadProfilePhoto,
-  deleteProfilePhoto,
   uploadCoverPhoto,
-  deleteCoverPhoto,
   getUsuariosBloqueados,
   desbloquearUsuario,
   actualizarPerfil,
@@ -16,11 +14,10 @@ import {
 import DOMPurify from "dompurify";
 import ConfirmDeleteModal from "./ConfirmDeleteModal";
 import StoryArchive from "../Stories/StoryArchive";
+import MediaPickerModal from "../UI/MediaPickerModal";
 import {
   Camera,
-  Trash2,
   Volume2,
-  VolumeX,
   ShieldAlert,
   User as UserIcon,
   Key,
@@ -29,7 +26,8 @@ import {
   Save,
   UserX,
   XCircle,
-  Music
+  Settings,
+  Clock
 } from "lucide-react";
 
 import { NOTIF_SOUNDS } from "../../utils/sounds";
@@ -39,6 +37,8 @@ const Configuraciones = () => {
   const { sonidoHabilitado, habilitarSonido, deshabilitarSonido } = useNotificaciones();
   const { showConfirm } = useModal();
   const { success, error: showError } = useToast();
+  const profileInputRef = React.useRef(null);
+  const coverInputRef = React.useRef(null);
 
   const [form, setForm] = useState({
     nombre: user?.nombre || "",
@@ -54,9 +54,10 @@ const Configuraciones = () => {
   const [file, setFile] = useState(null);
   const [coverFile, setCoverFile] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [loadingCover, setLoadingCover] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [pickerTarget, setPickerTarget] = useState(null); // 'profile' or 'cover'
 
   useEffect(() => {
     const cargarBloqueados = async () => {
@@ -125,7 +126,7 @@ const Configuraciones = () => {
     if (!coverFile) return;
     const formData = new FormData();
     formData.append("fotoPortada", coverFile);
-    setLoadingCover(true);
+    setLoading(true);
     try {
       const res = await uploadCoverPhoto(formData);
       const updatedUser = { ...user, fotoPortada: res.fotoPortada };
@@ -137,42 +138,10 @@ const Configuraciones = () => {
       console.error(err);
       showError("Error al subir portada");
     } finally {
-      setLoadingCover(false);
-    }
-  };
-
-  const handleDeleteCover = async () => {
-    const confirmed = await showConfirm("Eliminar portada", "¿Eliminar foto de portada?");
-    if (!confirmed) return;
-    setLoadingCover(true);
-    try {
-      await deleteCoverPhoto();
-      const updatedUser = { ...user, fotoPortada: "" };
-      setUser(updatedUser);
-      localStorage.setItem("usuario", JSON.stringify(updatedUser));
-      success("Portada eliminada");
-    } catch (error) {
-      setErrorMsg("Error al eliminar portada.");
-    } finally {
-      setLoadingCover(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    const confirmed = await showConfirm("Eliminar foto", "¿Eliminar foto de perfil?");
-    if (!confirmed) return;
-    setLoading(true);
-    try {
-      await deleteProfilePhoto();
-      const updatedUser = { ...user, fotoPerfil: "" };
-      setUser(updatedUser);
-      localStorage.setItem("usuario", JSON.stringify(updatedUser));
-    } catch (error) {
-      setErrorMsg("Error al eliminar foto.");
-    } finally {
       setLoading(false);
     }
   };
+
 
   const handleActualizarPerfil = async () => {
     const sanitizedNombre = DOMPurify.sanitize(form.nombre.trim());
@@ -210,102 +179,91 @@ const Configuraciones = () => {
   };
 
   return (
-    <div className="max-w-4xl mx-auto pb-20">
-      <div className="p-8 pb-4">
-        <h1 className="text-3xl font-black text-gray-900 tracking-tight mb-2">Configuraciones</h1>
-        <p className="text-sm font-medium text-gray-400 uppercase tracking-widest">Personaliza tu experiencia</p>
+    <div className="max-w-2xl mx-auto pb-24 px-2 sm:px-4">
+      <MediaPickerModal 
+        isOpen={isPickerOpen} 
+        onClose={() => setIsPickerOpen(false)} 
+        onSelect={(type) => {
+          const input = pickerTarget === 'profile' ? profileInputRef.current : coverInputRef.current;
+          if (!input) return;
+          if (type === 'camera') {
+            input.setAttribute('capture', 'environment');
+          } else {
+            input.removeAttribute('capture');
+          }
+          setTimeout(() => input.click(), 100);
+        }}
+        filter={["camera", "gallery"]}
+      />
+      <div className="py-4 sm:py-8 px-2 flex items-center justify-between">
+        <div>
+          <p className="text-[8px] sm:text-[11px] font-black uppercase tracking-[0.3em] text-red-600 mb-0.5">Centro de Control</p>
+          <h1 className="text-xl sm:text-3xl font-black text-gray-900 tracking-tight leading-none">AJUSTES</h1>
+        </div>
+        <div className="w-8 h-8 sm:w-12 sm:h-12 bg-red-600 rounded-full flex items-center justify-center shadow-lg shadow-red-200">
+          <Settings className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
+        </div>
       </div>
 
       {errorMsg && (
-        <div className="mx-8 mb-6 p-4 bg-red-50 border border-red-100 text-red-600 rounded-2xl flex items-center gap-3">
-          <ShieldAlert className="w-5 h-5" />
-          <span className="text-sm font-bold">{errorMsg}</span>
+        <div className="mb-4 p-3 bg-red-50 border border-red-100 text-red-600 rounded-xl flex items-center gap-2 animate-in fade-in slide-in-from-top-2">
+          <ShieldAlert className="w-4 h-4" />
+          <span className="text-[10px] font-bold uppercase">{errorMsg}</span>
         </div>
       )}
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 px-8">
-        {/* Profile Picture Section */}
-        <div className="bg-white border border-red-50 rounded-[3rem] p-8 shadow-xl shadow-red-100/20">
-          <h2 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-3">
-            <Camera className="w-6 h-6 text-red-600" />
-            <span>Imagen de Perfil</span>
-          </h2>
-          <div className="flex flex-col items-center gap-6">
-            <div className="relative group/avatar">
-              <div className="absolute inset-0 bg-red-600 rounded-[2.5rem] blur-xl opacity-10 group-hover/avatar:opacity-20 transition-opacity"></div>
-              <img
-                src={user?.fotoPerfil || "/assets/Custom-Icon-Design-Pretty-Office-8-User-red.256.png"}
-                alt="Perfil"
-                className="w-40 h-40 object-cover rounded-[2.5rem] border-4 border-white shadow-lg relative z-10"
-              />
-            </div>
-
-            <div className="w-full space-y-3">
-              <label className="flex items-center justify-center gap-2 w-full py-4 bg-gray-50 text-gray-600 font-black text-xs uppercase tracking-widest rounded-3xl cursor-pointer hover:bg-gray-100 transition-all border-2 border-dashed border-gray-200">
-                <Camera className="w-4 h-4" />
-                <span>{file ? file.name : "Seleccionar Imagen"}</span>
-                <input type="file" className="hidden" onChange={handleFileChange} accept="image/*" />
-              </label>
-
-              <div className="flex gap-3">
-                <button
-                  onClick={handleUpload}
-                  disabled={loading || !file}
-                  className="flex-1 py-4 bg-red-600 text-white font-black text-xs uppercase tracking-widest rounded-3xl shadow-lg shadow-red-200 hover:bg-red-700 active:scale-95 transition-all disabled:opacity-40"
-                >
-                  Subir
-                </button>
-                {user?.fotoPerfil && (
-                  <button
-                    onClick={handleDelete}
-                    disabled={loading}
-                    className="p-4 bg-red-50 text-red-600 rounded-3xl hover:bg-red-600 hover:text-white transition-all active:scale-95"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Cover Picture Section */}
-        <div className="bg-white border border-red-50 rounded-[3rem] p-8 shadow-xl shadow-red-100/20">
-          <h2 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-3">
-            <Camera className="w-6 h-6 text-red-600" />
-            <span>Imagen de Portada</span>
-          </h2>
-          <div className="flex flex-col items-center gap-6">
-            <div className="relative w-full aspect-[3/1] rounded-3xl overflow-hidden shadow-inner bg-gray-100">
-              <img
-                src={user?.fotoPortada || "https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=2000&auto=format&fit=crop"}
-                alt="Portada"
-                className="w-full h-full object-cover"
-              />
-            </div>
-
-            <div className="w-full space-y-3">
-              <label className="flex items-center justify-center gap-2 w-full py-4 bg-gray-50 text-gray-600 font-black text-xs uppercase tracking-widest rounded-3xl cursor-pointer hover:bg-gray-100 transition-all border-2 border-dashed border-gray-200">
-                <Camera className="w-4 h-4" />
-                <span>{coverFile ? coverFile.name : "Seleccionar Portada"}</span>
-                <input type="file" className="hidden" onChange={handleCoverFileChange} accept="image/*" />
-              </label>
-
-              <div className="flex gap-3">
-                <button
+      <div className="space-y-3">
+        {/* Header: Profile & Cover Integrated */}
+        <div className="bg-white border border-gray-100 rounded-[2rem] overflow-hidden shadow-xl shadow-gray-200/50">
+          <div className="relative h-20 sm:h-32 group">
+            <img
+              src={user?.fotoPortada || "https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=2000&auto=format&fit=crop"}
+              alt="Portada"
+              className="w-full h-full object-cover"
+            />
+            <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-all flex items-center justify-center">
+              <button 
+                onClick={() => { setPickerTarget('cover'); setIsPickerOpen(true); }}
+                className="p-2 bg-white/20 backdrop-blur-md rounded-full text-white cursor-pointer hover:bg-white/40 transition-all border border-white/20"
+              >
+                <Camera className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+              </button>
+              <input type="file" ref={coverInputRef} className="hidden" onChange={handleCoverFileChange} accept="image/*" />
+              {coverFile && (
+                <button 
                   onClick={handleUploadCover}
-                  disabled={loadingCover || !coverFile}
-                  className="flex-1 py-4 bg-red-600 text-white font-black text-xs uppercase tracking-widest rounded-3xl shadow-lg shadow-red-200 hover:bg-red-700 active:scale-95 transition-all disabled:opacity-40"
+                  className="ml-2 px-3 py-1 bg-red-600 text-white text-[8px] sm:text-[11px] font-black uppercase rounded-full shadow-lg"
                 >
-                  Subir Portada
+                  Confirmar
                 </button>
-                {user?.fotoPortada && (
-                  <button
-                    onClick={handleDeleteCover}
-                    disabled={loadingCover}
-                    className="p-4 bg-red-50 text-red-600 rounded-3xl hover:bg-red-600 hover:text-white transition-all active:scale-95"
+              )}
+            </div>
+          </div>
+          <div className="px-4 pb-4 -mt-8 sm:-mt-12 relative z-10">
+            <div className="flex items-end gap-3 mb-2">
+              <div className="relative group/avatar">
+                <img
+                  src={user?.fotoPerfil || "/assets/Custom-Icon-Design-Pretty-Office-8-User-red.256.png"}
+                  alt="Perfil"
+                  className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-2xl sm:rounded-3xl border-4 border-white shadow-xl"
+                />
+                <button 
+                  onClick={() => { setPickerTarget('profile'); setIsPickerOpen(true); }}
+                  className="absolute inset-0 bg-black/40 rounded-2xl sm:rounded-3xl opacity-0 group-hover/avatar:opacity-100 transition-opacity flex items-center justify-center cursor-pointer"
+                >
+                  <Camera className="w-4 h-4 text-white" />
+                </button>
+                <input type="file" ref={profileInputRef} className="hidden" onChange={handleFileChange} accept="image/*" />
+              </div>
+              <div className="mb-1 flex-1">
+                <h3 className="text-sm sm:text-lg font-black text-gray-900 leading-none">{user?.nombre}</h3>
+                <p className="text-[8px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-widest">@{user?.username || 'usuario'}</p>
+                {file && (
+                  <button 
+                    onClick={handleUpload}
+                    className="mt-1 px-3 py-0.5 bg-red-600 text-white text-[7px] sm:text-[10px] font-black uppercase rounded-full"
                   >
-                    <Trash2 className="w-5 h-5" />
+                    Guardar Foto
                   </button>
                 )}
               </div>
@@ -313,224 +271,199 @@ const Configuraciones = () => {
           </div>
         </div>
 
-        {/* Preferences / Sound */}
-        <div className="bg-white border border-red-50 rounded-[3rem] p-8 shadow-xl shadow-red-100/20">
-          <h2 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-3">
-            <Volume2 className="w-6 h-6 text-red-600" />
-            <span>Preferencias</span>
-          </h2>
-          <div className="space-y-4">
-            <div className={`p-6 rounded-[2.5rem] transition-all flex items-center justify-between ${sonidoHabilitado ? 'bg-green-50 text-green-700' : 'bg-gray-50 text-gray-400'}`}>
-              <div className="flex items-center gap-4">
-                {sonidoHabilitado ? <Volume2 className="w-8 h-8" /> : <VolumeX className="w-8 h-8" />}
-                <div>
-                  <p className="font-black text-sm uppercase tracking-wider">Sonido</p>
-                  <p className="text-[10px] font-bold opacity-70 uppercase tracking-tighter">Notificaciones</p>
-                </div>
+        {/* Preferences Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="bg-white/70 backdrop-blur-md border border-gray-100 rounded-2xl p-3 sm:p-4 shadow-sm">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Volume2 className="w-3.5 h-3.5 text-red-600" />
+                <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-gray-900">Sonido</span>
               </div>
               <button
                 onClick={sonidoHabilitado ? deshabilitarSonido : habilitarSonido}
-                className={`px-6 py-2 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${sonidoHabilitado ? 'bg-green-600 text-white' : 'bg-gray-200 text-gray-600 hover:bg-red-600 hover:text-white'}`}
+                className={`w-8 h-4 sm:w-10 sm:h-5 rounded-full relative transition-all ${sonidoHabilitado ? 'bg-green-500' : 'bg-gray-200'}`}
               >
-                {sonidoHabilitado ? 'On' : 'Off'}
+                <div className={`absolute top-0.5 w-3 h-3 sm:w-4 sm:h-4 bg-white rounded-full transition-all ${sonidoHabilitado ? 'right-0.5' : 'left-0.5'}`} />
               </button>
             </div>
-
-            <div className="p-6 bg-red-50 rounded-[2.5rem]">
-              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-red-600 mb-4 ml-2 flex items-center gap-2">
-                <Music className="w-3 h-3" />
-                <span>Tipo de Sonido</span>
-              </h4>
-              <div className="grid grid-cols-2 gap-2">
-                {NOTIF_SOUNDS.map(s => (
-                  <button
-                    key={s.id}
-                    onClick={() => {
-                      const newConfig = { ...user?.configuracionStatus, sonidoTipo: s.id };
-                      setUser({ ...user, configuracionStatus: newConfig });
-                      actualizarPerfil({ configuracionStatus: newConfig });
-                      // Probar sonido
-                      const audio = new Audio(s.url);
-                      audio.play().catch(e => console.error("Error al reproducir audio", e));
-                    }}
-                    className={`py-3 rounded-2xl text-[10px] font-black transition-all ${(user?.configuracionStatus?.sonidoTipo || 'classic') === s.id ? 'bg-red-600 text-white shadow-lg' : 'bg-white text-gray-400 hover:bg-red-100'}`}
-                  >
-                    {s.name}
-                  </button>
-                ))}
-              </div>
+            <div className="max-h-40 overflow-y-auto pr-1 space-y-1 custom-scrollbar">
+              {NOTIF_SOUNDS.map(s => (
+                <button
+                  key={s.id}
+                  onClick={() => {
+                    const newConfig = { ...user?.configuracionStatus, sonidoTipo: s.id };
+                    setUser({ ...user, configuracionStatus: newConfig });
+                    actualizarPerfil({ configuracionStatus: newConfig });
+                    new Audio(s.url).play().catch(e => {});
+                  }}
+                  className={`w-full flex items-center justify-between px-3 py-2 rounded-xl text-[8px] sm:text-[11px] font-black transition-all ${(user?.configuracionStatus?.sonidoTipo || 'classic') === s.id ? 'bg-red-600 text-white shadow-md' : 'bg-gray-50 text-gray-400 hover:bg-red-50'}`}
+                >
+                  <span className="uppercase tracking-widest">{s.name}</span>
+                  {(user?.configuracionStatus?.sonidoTipo || 'classic') === s.id && <div className="w-1 h-1 bg-white rounded-full" />}
+                </button>
+              ))}
             </div>
+          </div>
 
-            <div className="p-6 bg-red-50 rounded-[2.5rem]">
-              <h4 className="text-[10px] font-black uppercase tracking-[0.2em] text-red-600 mb-4 ml-2">Duración de Estados</h4>
-              <div className="grid grid-cols-3 gap-2">
-                {[1, 4, 8, 12, 24, 72].map(h => (
-                  <button
-                    key={h}
-                    onClick={() => {
-                      const newConfig = { ...user?.configuracionStatus, duracion: h };
-                      setUser({ ...user, configuracionStatus: newConfig });
-                      actualizarPerfil({ configuracionStatus: newConfig });
-                    }}
-                    className={`py-3 rounded-2xl text-[10px] font-black transition-all ${(user?.configuracionStatus?.duracion || 24) === h ? 'bg-red-600 text-white shadow-lg' : 'bg-white text-gray-400 hover:bg-red-100'}`}
-                  >
-                    {h}H
-                  </button>
-                ))}
-              </div>
+          <div className="bg-white/70 backdrop-blur-md border border-gray-100 rounded-2xl p-3 sm:p-4 shadow-sm">
+            <div className="flex items-center gap-2 mb-3">
+              <Clock className="w-3.5 h-3.5 text-red-600" />
+              <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-gray-900">Duración Estados</span>
+            </div>
+            <div className="grid grid-cols-3 gap-1">
+              {[4, 12, 24, 72, 168].map(h => (
+                <button
+                  key={h}
+                  onClick={() => {
+                    const newConfig = { ...user?.configuracionStatus, duracion: h };
+                    setUser({ ...user, configuracionStatus: newConfig });
+                    actualizarPerfil({ configuracionStatus: newConfig });
+                  }}
+                  className={`py-1.5 rounded-lg text-[8px] sm:text-[11px] font-black transition-all ${(user?.configuracionStatus?.duracion || 24) === h ? 'bg-red-600 text-white shadow-md' : 'bg-gray-50 text-gray-400 hover:bg-red-50'}`}
+                >
+                  {h === 168 ? '1 SEM' : `${h}H`}
+                </button>
+              ))}
             </div>
           </div>
         </div>
 
-        {/* Info Profile */}
-        <div className="bg-white border border-red-50 rounded-[3rem] p-8 shadow-xl shadow-red-100/20 lg:col-span-2">
-          <h2 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-3">
-            <UserIcon className="w-6 h-6 text-red-600" />
-            <span>Información del Perfil</span>
-          </h2>
-          <div className="space-y-4">
-            <div className="relative">
+        {/* Profile Info Form */}
+        <div className="bg-white border border-gray-100 rounded-[2rem] p-4 sm:p-6 shadow-sm">
+          <div className="flex items-center gap-2 mb-4">
+            <UserIcon className="w-4 h-4 text-red-600" />
+            <span className="text-[9px] sm:text-xs font-black uppercase tracking-widest text-gray-900">Perfil Público</span>
+          </div>
+          <div className="space-y-2">
+            <div>
+              <p className="text-[7px] font-black uppercase text-gray-400 ml-3 mb-1">Nombre</p>
               <input
                 type="text"
-                placeholder="Bio (describe quién eres)"
+                placeholder="Tu nombre"
+                value={form.nombre}
+                onChange={(e) => setForm({ ...form, nombre: e.target.value })}
+                className="w-full px-4 py-2 bg-gray-50 rounded-xl text-[10px] focus:bg-white focus:ring-1 focus:ring-red-500 transition-all outline-none font-bold"
+              />
+            </div>
+            <div>
+              <p className="text-[7px] font-black uppercase text-gray-400 ml-3 mb-1">Bio</p>
+              <textarea
+                placeholder="¿Quién eres?"
                 value={form.bio}
                 onChange={(e) => setForm({ ...form, bio: e.target.value })}
-                className="w-full px-6 py-4 bg-gray-50 border-transparent rounded-[2rem] text-sm focus:bg-white focus:ring-2 focus:ring-red-500 transition-all outline-none font-bold"
+                className="w-full px-4 py-2 bg-gray-50 rounded-xl text-[10px] focus:bg-white focus:ring-1 focus:ring-red-500 transition-all outline-none font-bold resize-none h-12"
               />
             </div>
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Ubicación (ciudad, país)"
-                value={form.ubicacion}
-                onChange={(e) => setForm({ ...form, ubicacion: e.target.value })}
-                className="w-full px-6 py-4 bg-gray-50 border-transparent rounded-[2rem] text-sm focus:bg-white focus:ring-2 focus:ring-red-500 transition-all outline-none font-bold"
-              />
-            </div>
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Sitio web"
-                value={form.sitioWeb}
-                onChange={(e) => setForm({ ...form, sitioWeb: e.target.value })}
-                className="w-full px-6 py-4 bg-gray-50 border-transparent rounded-[2rem] text-sm focus:bg-white focus:ring-2 focus:ring-red-500 transition-all outline-none font-bold"
-              />
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <p className="text-[7px] font-black uppercase text-gray-400 ml-3 mb-1">Ubicación</p>
+                <input
+                  type="text"
+                  placeholder="Ciudad"
+                  value={form.ubicacion}
+                  onChange={(e) => setForm({ ...form, ubicacion: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-50 rounded-xl text-[10px] focus:bg-white focus:ring-1 focus:ring-red-500 transition-all outline-none font-bold"
+                />
+              </div>
+              <div>
+                <p className="text-[7px] sm:text-[10px] font-black uppercase text-gray-400 ml-3 mb-1">Web</p>
+                <input
+                  type="text"
+                  placeholder="https://..."
+                  value={form.sitioWeb}
+                  onChange={(e) => setForm({ ...form, sitioWeb: e.target.value })}
+                  className="w-full px-4 py-2 bg-gray-50 rounded-xl text-[10px] sm:text-[13px] focus:bg-white focus:ring-1 focus:ring-red-500 transition-all outline-none font-bold"
+                />
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Security / Profile Update */}
-        <div className="bg-white border border-red-50 rounded-[3rem] p-8 shadow-xl shadow-red-100/20 lg:col-span-2">
-          <h2 className="text-xl font-black text-gray-900 mb-8 flex items-center gap-3">
-            <Key className="w-6 h-6 text-red-600" />
-            <span>Seguridad del Perfil</span>
-          </h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-            <div className="space-y-6">
-              <div className="relative">
-                <UserIcon className="absolute left-4 top-4 w-5 h-5 text-gray-400" />
-                <input
-                  type="text"
-                  placeholder="Nuevo nombre"
-                  value={form.nombre}
-                  onChange={(e) => setForm({ ...form, nombre: e.target.value })}
-                  className="w-full pl-12 pr-4 py-4 bg-gray-50 border-transparent rounded-[2rem] text-sm focus:bg-white focus:ring-2 focus:ring-red-500 transition-all outline-none font-bold"
-                />
-              </div>
-              <div className="flex items-center gap-4 p-4 bg-red-50 rounded-[2rem]">
-                <button onClick={() => setMostrarPasswords(!mostrarPasswords)} className="text-red-600 bg-white p-2 rounded-xl shadow-sm">
-                  {mostrarPasswords ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
-                <span className="text-xs font-black text-red-700 uppercase tracking-widest">Mostrar Contraseñas</span>
-              </div>
+        {/* Security Section */}
+        <div className="bg-white border border-gray-100 rounded-[2rem] p-4 sm:p-6 shadow-sm">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center gap-2">
+              <Key className="w-4 h-4 text-red-600" />
+              <span className="text-[9px] sm:text-xs font-black uppercase tracking-widest text-gray-900">Seguridad</span>
             </div>
-
-            <div className="space-y-4">
+            <button 
+              onClick={() => setMostrarPasswords(!mostrarPasswords)}
+              className={`p-1.5 rounded-lg transition-all ${mostrarPasswords ? 'bg-red-50 text-red-600' : 'bg-gray-50 text-gray-400'}`}
+            >
+              {mostrarPasswords ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+            </button>
+          </div>
+          <div className="space-y-2">
+            <input
+              type={mostrarPasswords ? "text" : "password"}
+              placeholder="Contraseña Actual"
+              value={form.passwordActual}
+              onChange={(e) => setForm({ ...form, passwordActual: e.target.value })}
+              className="w-full px-4 py-2 bg-gray-50 rounded-xl text-[10px] sm:text-[13px] outline-none border border-transparent focus:border-red-100 font-bold"
+            />
+            <div className="grid grid-cols-2 gap-2">
               <input
                 type={mostrarPasswords ? "text" : "password"}
-                placeholder="Contraseña Actual"
-                value={form.passwordActual}
-                onChange={(e) => setForm({ ...form, passwordActual: e.target.value })}
-                className="w-full px-6 py-4 bg-gray-50 border-transparent rounded-[2rem] text-sm focus:bg-white focus:ring-2 focus:ring-red-500 transition-all outline-none"
-              />
-              <input
-                type={mostrarPasswords ? "text" : "password"}
-                placeholder="Nueva Contraseña"
+                placeholder="Nueva"
                 value={form.passwordNueva}
                 onChange={(e) => setForm({ ...form, passwordNueva: e.target.value })}
-                className="w-full px-6 py-4 bg-gray-50 border-transparent rounded-[2rem] text-sm focus:bg-white focus:ring-2 focus:ring-red-500 transition-all outline-none"
+                className="w-full px-4 py-2 bg-gray-50 rounded-xl text-[10px] sm:text-[13px] outline-none border border-transparent focus:border-red-100 font-bold"
               />
               <input
                 type={mostrarPasswords ? "text" : "password"}
-                placeholder="Confirmar Contraseña"
+                placeholder="Confirmar"
                 value={form.confirmarPassword}
                 onChange={(e) => setForm({ ...form, confirmarPassword: e.target.value })}
-                className="w-full px-6 py-4 bg-gray-50 border-transparent rounded-[2rem] text-sm focus:bg-white focus:ring-2 focus:ring-red-500 transition-all outline-none"
+                className="w-full px-4 py-2 bg-gray-50 rounded-xl text-[10px] sm:text-[13px] outline-none border border-transparent focus:border-red-100 font-bold"
               />
             </div>
           </div>
-
           <button
             onClick={handleActualizarPerfil}
             disabled={loading}
-            className="mt-8 w-full py-5 bg-red-600 text-white font-black uppercase tracking-[0.3em] text-xs rounded-[2.5rem] shadow-xl shadow-red-200 hover:bg-red-700 hover:scale-[1.01] active:scale-100 transition-all flex items-center justify-center gap-4 disabled:opacity-50"
+            className="mt-4 w-full py-3 bg-red-600 text-white font-black uppercase tracking-[0.2em] text-[10px] sm:text-[13px] rounded-xl shadow-lg shadow-red-100 hover:bg-red-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           >
-            <Save className="w-5 h-5" />
-            <span>Guardar Cambios</span>
+            <Save className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
+            <span>Guardar Ajustes</span>
           </button>
         </div>
 
-        {/* Blocked Users */}
-        <div className="bg-white border border-red-50 rounded-[3rem] p-8 shadow-xl shadow-red-100/20 lg:col-span-2">
-          <h2 className="text-xl font-black text-gray-900 mb-6 flex items-center gap-3">
-            <UserX className="w-6 h-6 text-red-600" />
-            <span>Usuarios Bloqueados</span>
-          </h2>
-          {bloqueados.length === 0 ? (
-            <div className="py-12 text-center opacity-20">
-              <UserX className="w-16 h-16 mx-auto mb-4" />
-              <p className="font-black uppercase tracking-widest text-xs">No hay bloqueos</p>
+        {/* Blocked Users - Multi-grid or List */}
+        {bloqueados.length > 0 && (
+          <div className="bg-white border border-red-50 rounded-2xl p-4 shadow-sm">
+             <div className="flex items-center gap-2 mb-3">
+              <UserX className="w-4 h-4 text-red-600" />
+              <span className="text-[9px] font-black uppercase tracking-widest text-gray-900">Bloqueados ({bloqueados.length})</span>
             </div>
-          ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {bloqueados.map((usuario) => (
-                <div key={usuario._id || usuario.id} className="flex justify-between items-center p-4 bg-gray-50 rounded-[2rem] border border-gray-100 group">
-                  <div className="flex items-center gap-4">
-                    <img
-                      src={usuario.fotoPerfil || "/assets/Custom-Icon-Design-Pretty-Office-8-User-red.256.png"}
-                      alt="avatar"
-                      className="w-12 h-12 rounded-2xl object-cover border-2 border-white"
-                    />
-                    <div>
-                      <p className="font-black text-gray-900 text-sm">{usuario.nombre}</p>
-                      <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest">@{usuario.username || 'usuario'}</p>
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => handleDesbloquear(usuario._id || usuario.id)}
-                    className="px-4 py-2 bg-white text-green-600 font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-green-600 hover:text-white transition-all shadow-sm"
-                  >
-                    Desbloquear
+            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+              {bloqueados.map((u) => (
+                <div key={u._id || u.id} className="flex-shrink-0 flex items-center gap-2 bg-gray-50 p-1.5 pr-3 rounded-full border border-gray-100">
+                  <img src={u.fotoPerfil || "/assets/placeholder.png"} className="w-6 h-6 rounded-full object-cover" alt=""/>
+                  <span className="text-[8px] sm:text-[11px] font-bold truncate max-w-[60px] sm:max-w-none">{u.nombre?.split(' ')[0]}</span>
+                  <button onClick={() => handleDesbloquear(u._id || u.id)} className="text-red-500 hover:text-red-700">
+                    <XCircle className="w-3 h-3" />
                   </button>
                 </div>
               ))}
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Story Archive */}
-        <div className="lg:col-span-2">
-          <StoryArchive />
-        </div>
+        <StoryArchive />
 
         {/* Danger Zone */}
-        <div className="lg:col-span-2 pt-8 text-center">
+        <div className="pt-6">
           <button
             onClick={() => setShowDeleteModal(true)}
-            className="px-8 py-3 text-red-300 hover:text-red-700 font-black text-[10px] uppercase tracking-[0.4em] transition-all flex items-center gap-4 mx-auto group"
+            className="w-full py-4 bg-red-50 hover:bg-red-600 text-red-600 hover:text-white border-2 border-red-50 hover:border-red-600 rounded-[2rem] transition-all flex flex-col items-center justify-center gap-1 group overflow-hidden relative shadow-lg shadow-red-100/50"
           >
-            <XCircle className="w-4 h-4 transition-transform group-hover:rotate-90" />
-            <span>Eliminar mi Cuenta permanentemente</span>
+            <div className="absolute inset-0 bg-red-600 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
+            <div className="relative z-10 flex flex-col items-center">
+              <ShieldAlert className="w-5 h-5 mb-1 group-hover:scale-110 transition-transform" />
+              <span className="text-[10px] font-black uppercase tracking-[0.3em]">Eliminar mi Cuenta</span>
+              <span className="text-[7px] font-bold opacity-60 uppercase tracking-tighter">Acción irreversible • Se borrarán todos tus datos</span>
+            </div>
           </button>
         </div>
       </div>

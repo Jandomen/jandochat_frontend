@@ -147,15 +147,15 @@ export default function StoryEditor({ onClose, onPublished }) {
 
     return (
         <div className="fixed inset-0 z-[100] bg-black/90 backdrop-blur-xl flex items-center justify-center">
-            <div className="relative w-full max-w-[420px] h-full max-h-[90vh] flex flex-col bg-gray-950 rounded-3xl overflow-hidden shadow-2xl mx-4">
+            <div className="relative w-full max-w-[320px] h-[80vh] flex flex-col bg-gray-950 rounded-[2rem] overflow-hidden shadow-2xl mx-4">
 
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 bg-black/50 backdrop-blur-sm z-20">
-                    <h3 className="text-white font-black text-sm uppercase tracking-widest">
-                        {file ? "Editar Historia" : "Nueva Historia"}
+                <div className="flex items-center justify-between p-3 sm:p-4 bg-black/50 backdrop-blur-sm z-20">
+                    <h3 className="text-white font-black text-[10px] sm:text-sm uppercase tracking-widest">
+                        {file ? "Editar" : "Nueva Historia"}
                     </h3>
-                    <button onClick={onClose} className="p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-full transition-all">
-                        <X className="w-5 h-5" />
+                    <button onClick={onClose} className="p-1.5 text-white/60 hover:text-white hover:bg-white/10 rounded-full transition-all">
+                        <X className="w-4 h-4" />
                     </button>
                 </div>
 

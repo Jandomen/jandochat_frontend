@@ -58,26 +58,26 @@ export default function Chat() {
   };
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-10 animate-in fade-in duration-700">
-      <div className="flex items-center justify-between mb-10">
-        <div className="flex items-center gap-5">
-          <div className="p-4 bg-red-600 text-white rounded-[1.5rem] shadow-xl shadow-red-200">
-            <MessageSquare className="w-8 h-8" />
+    <div className="max-w-4xl mx-auto px-4 py-6 sm:py-10 animate-in fade-in duration-700">
+      <div className="flex items-center justify-between mb-6 sm:mb-10">
+        <div className="flex items-center gap-3 sm:gap-5">
+          <div className="p-3 sm:p-4 bg-red-600 text-white rounded-2xl sm:rounded-[1.5rem] shadow-xl shadow-red-200">
+            <MessageSquare className="w-6 h-6 sm:w-8 sm:h-8" />
           </div>
           <div>
-            <h1 className="text-4xl font-black text-gray-900 tracking-tighter">Mensajes</h1>
-            <p className="text-gray-400 font-bold uppercase text-[10px] tracking-[0.3em]">{conversaciones.length} Chat(s) activos</p>
+            <h1 className="text-2xl sm:text-4xl font-black text-gray-900 tracking-tighter">Mensajes</h1>
+            <p className="text-gray-400 font-bold uppercase text-[9px] sm:text-[10px] tracking-[0.2em] sm:tracking-[0.3em]">{conversaciones.length} Chat(s) activos</p>
           </div>
         </div>
         <button
           onClick={handleCrearConversacion}
-          className="p-5 bg-white text-red-600 border border-red-50 rounded-[1.5rem] hover:bg-red-600 hover:text-white transition-all shadow-xl shadow-red-100/10 group"
+          className="p-3 sm:p-5 bg-white text-red-600 border border-red-50 rounded-2xl sm:rounded-[1.5rem] hover:bg-red-600 hover:text-white transition-all shadow-xl shadow-red-100/10 group"
         >
-          <Plus className="w-6 h-6 group-hover:rotate-90 transition-transform" />
+          <Plus className="w-5 h-5 sm:w-6 sm:h-6 group-hover:rotate-90 transition-transform" />
         </button>
       </div>
 
-      <div className="bg-white rounded-[3rem] border border-red-50 shadow-2xl shadow-red-100/20 overflow-hidden min-h-[400px]">
+      <div className="bg-white rounded-3xl sm:rounded-[3rem] border border-red-50 shadow-2xl shadow-red-100/20 overflow-hidden min-h-[400px]">
         {buscandoUsuario ? (
           <BuscarUsuarios
             onSeleccionar={handleSeleccionarUsuario}
