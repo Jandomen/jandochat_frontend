@@ -1,8 +1,10 @@
 import React, { useState, useEffect } from "react";
 import { ringtonePlayer, RINGTONES } from "../../utils/ringtone";
 import { Music, Check } from "lucide-react";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function RingtoneSelector({ onClose }) {
+  const { t } = useLanguage();
   const [selected, setSelected] = useState(ringtonePlayer.loadSavedRingtone());
   const [previewing, setPreviewing] = useState(null);
 
@@ -47,7 +49,7 @@ export default function RingtoneSelector({ onClose }) {
         <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: 20 }}>
           <h2 style={{ fontSize: 18, fontWeight: "bold", display: "flex", alignItems: "center", gap: 8 }}>
             <Music size={20} />
-            Tono de llamada
+            {t('ringtone_title')}
           </h2>
           <button onClick={onClose} style={{ padding: 8, background: "transparent", border: "none", cursor: "pointer" }}>
             ✕
@@ -94,7 +96,7 @@ export default function RingtoneSelector({ onClose }) {
               fontWeight: "bold"
             }}
           >
-            Detener预览
+            {t('stop_preview')}
           </button>
         )}
       </div>

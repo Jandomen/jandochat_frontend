@@ -1,14 +1,41 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
+import useMentions from "../../hooks/useMentions";
 import { Send, Smile, Plus, Trash2, Scissors, Loader2 } from "lucide-react";
 import { uploadMedia } from "../../api/posts";
 import MediaPickerModal from "../UI/MediaPickerModal";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function CreatePost({ onPost }) {
+    const { t } = useLanguage();
     const [contenido, setContenido] = useState("");
     const [mediaList, setMediaList] = useState([]); // [{url, tipo, file}]
     const [errorStatus, setErrorStatus] = useState("");
     const [isUploading, setIsUploading] = useState(false);
     const [showEmojis, setShowEmojis] = useState(false);
+    const {
+        suggestions,
+        showSuggestions,
+        handleTextChange,
+        selectSuggestion,
+        loadUsers
+    } = useMentions();
+
+    useEffect(() => {
+        loadUsers();
+    }, [loadUsers]);
+
+    const handleTextareaChange = (e) => {
+        const val = e.target.value;
+        setContenido(val);
+        handleTextChange(val, e.target.selectionStart);
+    };
+
+    const handleSelectMention = (u) => {
+        selectSuggestion(u, contenido, (newText) => {
+            setContenido(newText);
+        });
+    };
+
     const [isPickerOpen, setIsPickerOpen] = useState(false);
 
     const commonEmojis = ["😊", "😂", "🥰", "😎", "🔥", "✨", "🙌", "🤔", "👍", "❤️", "⚡", "🚀", "🌈", "👀", "💯"];
@@ -18,7 +45,7 @@ export default function CreatePost({ onPost }) {
     const handleFileChange = (e) => {
         const files = Array.from(e.target.files);
         if (mediaList.length + files.length > 10) {
-            setErrorStatus("Máximo 10 elementos permitidos");
+            setErrorStatus(t('max_elements_error'));
             return;
         }
 
@@ -56,7 +83,7 @@ export default function CreatePost({ onPost }) {
             setErrorStatus("");
         } catch (error) {
             console.error("Error uploading:", error);
-            setErrorStatus("Error al subir archivos");
+            setErrorStatus(t('upload_error'));
         } finally {
             setIsUploading(false);
         }
@@ -89,17 +116,39 @@ export default function CreatePost({ onPost }) {
 
             <div className="relative z-10">
                 <div className="flex items-center justify-between mb-1.5 sm:mb-8">
-                    <h3 className="text-[10px] sm:text-2xl font-black text-gray-900 tracking-tight uppercase">Publicar</h3>
+                    <h3 className="text-[10px] sm:text-2xl font-black text-gray-900 tracking-tight uppercase">{t('publish')}</h3>
                     {errorStatus && <span className="text-[7px] sm:text-[10px] font-black uppercase text-red-500 bg-red-50 px-2 sm:px-4 py-1 sm:py-2 rounded-full animate-bounce">{errorStatus}</span>}
                 </div>
 
                 <form onSubmit={handleSubmit} className="space-y-2 sm:space-y-8">
-                    <textarea
-                        className="w-full h-12 sm:h-40 p-2 sm:p-8 bg-gray-50/50 rounded-lg sm:rounded-[3rem] border-transparent focus:bg-white focus:ring-4 sm:focus:ring-8 focus:ring-red-50 outline-none text-[12px] sm:text-xl transition-all resize-none font-medium placeholder:text-gray-300"
-                        placeholder="¿Qué tienes en mente?"
-                        value={contenido}
-                        onChange={(e) => setContenido(e.target.value)}
-                    />
+                        <textarea
+                            className="w-full h-12 sm:h-40 p-2 sm:p-8 bg-gray-50/50 rounded-lg sm:rounded-[3rem] border-transparent focus:bg-white focus:ring-4 sm:focus:ring-8 focus:ring-red-50 outline-none text-[12px] sm:text-xl transition-all resize-none font-medium placeholder:text-gray-300"
+                            placeholder={t('post_placeholder')}
+                            value={contenido}
+                            onChange={handleTextareaChange}
+                            onKeyUp={(e) => handleTextChange(e.target.value, e.target.selectionStart)}
+                            onClick={(e) => handleTextChange(e.target.value, e.target.selectionStart)}
+                        />
+
+                        {/* Mention Suggestions */}
+                        {showSuggestions && suggestions.length > 0 && (
+                            <div className="absolute top-1/2 left-4 sm:left-10 z-50 bg-white rounded-2xl shadow-2xl border border-red-50 p-2 w-[200px] sm:w-[300px] animate-in fade-in zoom-in-95 duration-200">
+                                {suggestions.map(u => (
+                                    <button
+                                        key={u._id}
+                                        type="button"
+                                        onClick={() => handleSelectMention(u)}
+                                        className="w-full flex items-center gap-3 p-2 hover:bg-red-50 rounded-xl transition-colors text-left"
+                                    >
+                                        <img src={u.fotoPerfil || "/assets/Custom-Icon-Design-Pretty-Office-8-User-red.256.png"} className="w-8 h-8 rounded-full object-cover" alt="" />
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-[10px] sm:text-sm font-black text-gray-900 truncate">@{u.username || u.nombre}</p>
+                                            <p className="text-[8px] sm:text-[10px] text-gray-400 font-bold uppercase truncate">{u.nombre}</p>
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
 
                     {/* Media Preview Grid */}
                     {mediaList.length > 0 && (
@@ -132,7 +181,7 @@ export default function CreatePost({ onPost }) {
                                     className="w-32 h-32 rounded-[1.5rem] bg-red-50/30 border-2 border-dashed border-red-200 flex flex-col items-center justify-center text-red-300 hover:bg-red-50 hover:text-red-600 transition-all gap-2"
                                 >
                                     <Plus className="w-8 h-8" />
-                                    <span className="text-[8px] font-black uppercase">Añadir más</span>
+                                    <span className="text-[8px] font-black uppercase">{t('add_more')}</span>
                                 </button>
                             )}
                         </div>
@@ -155,7 +204,7 @@ export default function CreatePost({ onPost }) {
                                 className="flex items-center gap-2 sm:gap-3 px-3 sm:px-6 py-2 sm:py-4 rounded-lg sm:rounded-2xl bg-gray-50 text-gray-400 hover:text-red-500 font-black text-[8px] sm:text-[10px] uppercase tracking-widest transition-all shadow-sm"
                             >
                                 <Scissors className="w-3.5 h-3.5 sm:w-5 sm:h-5 -rotate-90" />
-                                <span className="hidden sm:inline">Media</span>
+                                <span className="hidden sm:inline">{t('attach_media')}</span>
                             </button>
 
                             <div className="relative">
@@ -196,7 +245,7 @@ export default function CreatePost({ onPost }) {
                                 <Loader2 className="w-4 h-4 animate-spin" />
                             ) : (
                                 <>
-                                    <span className="truncate tracking-tighter uppercase">Publicar</span>
+                                    <span className="truncate tracking-tighter uppercase">{t('publish')}</span>
                                     <Send className="w-3.5 h-3.5" />
                                 </>
                             )}

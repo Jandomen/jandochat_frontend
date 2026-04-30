@@ -27,13 +27,16 @@ import {
   UserX,
   XCircle,
   Settings,
-  Clock
+  Clock,
+  Globe
 } from "lucide-react";
 
 import { NOTIF_SOUNDS } from "../../utils/sounds";
+import { useLanguage } from "../../context/LanguageContext";
 
 const Configuraciones = () => {
   const { user, setUser } = useAuth();
+  const { language, setLanguage, t, translations } = useLanguage();
   const { sonidoHabilitado, habilitarSonido, deshabilitarSonido } = useNotificaciones();
   const { showConfirm } = useModal();
   const { success, error: showError } = useToast();
@@ -42,6 +45,7 @@ const Configuraciones = () => {
 
   const [form, setForm] = useState({
     nombre: user?.nombre || "",
+    username: user?.username || "",
     passwordActual: "",
     passwordNueva: "",
     confirmarPassword: "",
@@ -65,29 +69,29 @@ const Configuraciones = () => {
         const data = await getUsuariosBloqueados();
         setBloqueados(data);
       } catch (error) {
-        setErrorMsg("Error al cargar usuarios bloqueados.");
+        setErrorMsg(t('error'));
       }
     };
     cargarBloqueados();
-  }, []);
+  }, [t]);
 
   const handleDesbloquear = async (userId) => {
-    const confirmed = await showConfirm("Desbloquear", "¿Seguro que quieres desbloquear este usuario?");
+    const confirmed = await showConfirm(t('unblock'), t('confirm_unblock_user'));
     if (!confirmed) return;
     try {
       await desbloquearUsuario(userId);
       setBloqueados((prev) => prev.filter((u) => (u._id || u.id) !== userId));
-      success("Usuario desbloqueado");
+      success(t('user_unblocked'));
     } catch (err) {
       console.error(err);
-      showError("Error al desbloquear");
+      showError(t('error'));
     }
   };
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile && !selectedFile.type.startsWith("image/")) {
-      setErrorMsg("Solo se permiten archivos de imagen.");
+      setErrorMsg(t('only_images_error') || "Solo se permiten imágenes");
       return;
     }
     setFile(selectedFile);
@@ -104,10 +108,10 @@ const Configuraciones = () => {
       setUser(updatedUser);
       localStorage.setItem("usuario", JSON.stringify(updatedUser));
       setFile(null);
-      success("Foto actualizada");
+      success(t('success'));
     } catch (err) {
       console.error(err);
-      showError("Error al subir foto");
+      showError(t('error'));
     } finally {
       setLoading(false);
     }
@@ -116,7 +120,7 @@ const Configuraciones = () => {
   const handleCoverFileChange = (e) => {
     const selectedFile = e.target.files[0];
     if (selectedFile && !selectedFile.type.startsWith("image/")) {
-      setErrorMsg("Solo se permiten archivos de imagen.");
+      setErrorMsg(t('only_images_error') || "Solo se permiten imágenes");
       return;
     }
     setCoverFile(selectedFile);
@@ -133,10 +137,10 @@ const Configuraciones = () => {
       setUser(updatedUser);
       localStorage.setItem("usuario", JSON.stringify(updatedUser));
       setCoverFile(null);
-      success("Portada actualizada");
+      success(t('success'));
     } catch (err) {
       console.error(err);
-      showError("Error al subir portada");
+      showError(t('error'));
     } finally {
       setLoading(false);
     }
@@ -149,6 +153,7 @@ const Configuraciones = () => {
     try {
       const datosActualizados = {};
       if (sanitizedNombre) datosActualizados.nombre = sanitizedNombre;
+      if (form.username) datosActualizados.username = form.username.trim();
       if (form.bio) datosActualizados.bio = form.bio.trim();
       if (form.ubicacion) datosActualizados.ubicacion = form.ubicacion.trim();
       if (form.sitioWeb) datosActualizados.sitioWeb = form.sitioWeb.trim();
@@ -156,23 +161,25 @@ const Configuraciones = () => {
         datosActualizados.passwordActual = form.passwordActual;
         datosActualizados.passwordNueva = form.passwordNueva;
       }
+      datosActualizados.idioma = language;
 
       const res = await actualizarPerfil(datosActualizados);
-      if (res.nombre) setUser({ ...user, nombre: res.nombre });
-      if (res.bio !== undefined) setUser({ ...user, bio: res.bio });
+      if (res.nombre) setUser({ ...user, nombre: res.nombre, username: res.username });
+      if (res.bio !== undefined) setUser((prev) => ({ ...prev, bio: res.bio }));
       if (res.ubicacion !== undefined) setUser({ ...user, ubicacion: res.ubicacion });
       if (res.sitioWeb !== undefined) setUser({ ...user, sitioWeb: res.sitioWeb });
 
-      const updatedUser = { ...user, ...datosActualizados };
+      const updatedUser = { ...user, ...datosActualizados, idioma: language };
       delete updatedUser.passwordActual;
       delete updatedUser.passwordNueva;
+      setUser(updatedUser);
       localStorage.setItem("usuario", JSON.stringify(updatedUser));
 
       setForm({ ...form, passwordActual: "", passwordNueva: "", confirmarPassword: "" });
-      success("Perfil actualizado");
+      success(t('success'));
     } catch (err) {
       console.error(err);
-      showError(err?.response?.data?.mensaje || "Error al actualizar");
+      showError(t('error'));
     } finally {
       setLoading(false);
     }
@@ -197,8 +204,8 @@ const Configuraciones = () => {
       />
       <div className="py-4 sm:py-8 px-2 flex items-center justify-between">
         <div>
-          <p className="text-[8px] sm:text-[11px] font-black uppercase tracking-[0.3em] text-red-600 mb-0.5">Centro de Control</p>
-          <h1 className="text-xl sm:text-3xl font-black text-gray-900 tracking-tight leading-none">AJUSTES</h1>
+          <p className="text-[8px] sm:text-[11px] font-black uppercase tracking-[0.3em] text-red-600 mb-0.5">{t('control_center')}</p>
+          <h1 className="text-xl sm:text-3xl font-black text-gray-900 tracking-tight leading-none uppercase">{t('settings_label')}</h1>
         </div>
         <div className="w-8 h-8 sm:w-12 sm:h-12 bg-red-600 rounded-full flex items-center justify-center shadow-lg shadow-red-200">
           <Settings className="w-4 h-4 sm:w-6 sm:h-6 text-white" />
@@ -218,7 +225,7 @@ const Configuraciones = () => {
           <div className="relative h-20 sm:h-32 group">
             <img
               src={user?.fotoPortada || "https://images.unsplash.com/photo-1557683316-973673baf926?q=80&w=2000&auto=format&fit=crop"}
-              alt="Portada"
+              alt={t('cover')}
               className="w-full h-full object-cover"
             />
             <div className="absolute inset-0 bg-black/20 group-hover:bg-black/40 transition-all flex items-center justify-center">
@@ -234,7 +241,7 @@ const Configuraciones = () => {
                   onClick={handleUploadCover}
                   className="ml-2 px-3 py-1 bg-red-600 text-white text-[8px] sm:text-[11px] font-black uppercase rounded-full shadow-lg"
                 >
-                  Confirmar
+                  {t('confirm')}
                 </button>
               )}
             </div>
@@ -244,7 +251,7 @@ const Configuraciones = () => {
               <div className="relative group/avatar">
                 <img
                   src={user?.fotoPerfil || "/assets/Custom-Icon-Design-Pretty-Office-8-User-red.256.png"}
-                  alt="Perfil"
+                  alt={t('profile_label')}
                   className="w-16 h-16 sm:w-24 sm:h-24 object-cover rounded-2xl sm:rounded-3xl border-4 border-white shadow-xl"
                 />
                 <button 
@@ -257,13 +264,13 @@ const Configuraciones = () => {
               </div>
               <div className="mb-1 flex-1">
                 <h3 className="text-sm sm:text-lg font-black text-gray-900 leading-none">{user?.nombre}</h3>
-                <p className="text-[8px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-widest">@{user?.username || 'usuario'}</p>
+                <p className="text-[8px] sm:text-[11px] font-bold text-gray-400 uppercase tracking-widest">@{user?.username || t('user_placeholder')}</p>
                 {file && (
                   <button 
                     onClick={handleUpload}
                     className="mt-1 px-3 py-0.5 bg-red-600 text-white text-[7px] sm:text-[10px] font-black uppercase rounded-full"
                   >
-                    Guardar Foto
+                    {t('save_photo')}
                   </button>
                 )}
               </div>
@@ -277,7 +284,7 @@ const Configuraciones = () => {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Volume2 className="w-3.5 h-3.5 text-red-600" />
-                <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-gray-900">Sonido</span>
+                <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-gray-900">{t('sound')}</span>
               </div>
               <button
                 onClick={sonidoHabilitado ? deshabilitarSonido : habilitarSonido}
@@ -308,7 +315,7 @@ const Configuraciones = () => {
           <div className="bg-white/70 backdrop-blur-md border border-gray-100 rounded-2xl p-3 sm:p-4 shadow-sm">
             <div className="flex items-center gap-2 mb-3">
               <Clock className="w-3.5 h-3.5 text-red-600" />
-              <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-gray-900">Duración Estados</span>
+              <span className="text-[8px] sm:text-[10px] font-black uppercase tracking-widest text-gray-900">{t('status_duration')}</span>
             </div>
             <div className="grid grid-cols-3 gap-1">
               {[4, 12, 24, 72, 168].map(h => (
@@ -321,10 +328,29 @@ const Configuraciones = () => {
                   }}
                   className={`py-1.5 rounded-lg text-[8px] sm:text-[11px] font-black transition-all ${(user?.configuracionStatus?.duracion || 24) === h ? 'bg-red-600 text-white shadow-md' : 'bg-gray-50 text-gray-400 hover:bg-red-50'}`}
                 >
-                  {h === 168 ? '1 SEM' : `${h}H`}
+                  {h === 168 ? `1 ${t('week_short')}` : `${h}${t('hours_short')}`}
                 </button>
               ))}
             </div>
+          </div>
+        </div>
+
+        {/* Language Selection */}
+        <div className="bg-white/70 backdrop-blur-md border border-gray-100 rounded-2xl p-4 sm:p-6 shadow-sm mb-4">
+          <div className="flex items-center gap-2 mb-4">
+            <Globe className="w-4 h-4 text-red-600" />
+            <span className="text-[9px] sm:text-xs font-black uppercase tracking-widest text-gray-900">{t('language')}</span>
+          </div>
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+            {Object.keys(translations).map(l => (
+              <button
+                key={l}
+                onClick={() => setLanguage(l)}
+                className={`py-3 rounded-xl text-[10px] font-black uppercase transition-all ${language === l ? 'bg-red-600 text-white shadow-lg scale-105' : 'bg-gray-50 text-gray-400 hover:bg-red-50'}`}
+              >
+                {t(`lang_${l.split('-')[0]}`)}
+              </button>
+            ))}
           </div>
         </div>
 
@@ -332,23 +358,33 @@ const Configuraciones = () => {
         <div className="bg-white border border-gray-100 rounded-[2rem] p-4 sm:p-6 shadow-sm">
           <div className="flex items-center gap-2 mb-4">
             <UserIcon className="w-4 h-4 text-red-600" />
-            <span className="text-[9px] sm:text-xs font-black uppercase tracking-widest text-gray-900">Perfil Público</span>
+            <span className="text-[9px] sm:text-xs font-black uppercase tracking-widest text-gray-900">{t('personal_info')}</span>
           </div>
           <div className="space-y-2">
             <div>
-              <p className="text-[7px] font-black uppercase text-gray-400 ml-3 mb-1">Nombre</p>
+              <p className="text-[7px] font-black uppercase text-gray-400 ml-3 mb-1">{t('name')}</p>
               <input
                 type="text"
-                placeholder="Tu nombre"
+                placeholder={t('name')}
                 value={form.nombre}
                 onChange={(e) => setForm({ ...form, nombre: e.target.value })}
                 className="w-full px-4 py-2 bg-gray-50 rounded-xl text-[10px] focus:bg-white focus:ring-1 focus:ring-red-500 transition-all outline-none font-bold"
               />
             </div>
             <div>
-              <p className="text-[7px] font-black uppercase text-gray-400 ml-3 mb-1">Bio</p>
+              <p className="text-[7px] font-black uppercase text-gray-400 ml-3 mb-1">{t('username')}</p>
+              <input
+                type="text"
+                placeholder={`@${t('username')}`}
+                value={form.username}
+                onChange={(e) => setForm({ ...form, username: e.target.value.toLowerCase().replace(/\s/g, '_') })}
+                className="w-full px-4 py-2 bg-gray-50 rounded-xl text-[10px] focus:bg-white focus:ring-1 focus:ring-red-500 transition-all outline-none font-bold mb-2"
+              />
+            </div>
+            <div>
+              <p className="text-[7px] font-black uppercase text-gray-400 ml-3 mb-1">{t('bio')}</p>
               <textarea
-                placeholder="¿Quién eres?"
+                placeholder={t('bio')}
                 value={form.bio}
                 onChange={(e) => setForm({ ...form, bio: e.target.value })}
                 className="w-full px-4 py-2 bg-gray-50 rounded-xl text-[10px] focus:bg-white focus:ring-1 focus:ring-red-500 transition-all outline-none font-bold resize-none h-12"
@@ -356,17 +392,17 @@ const Configuraciones = () => {
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <p className="text-[7px] font-black uppercase text-gray-400 ml-3 mb-1">Ubicación</p>
+                <p className="text-[7px] font-black uppercase text-gray-400 ml-3 mb-1">{t('location')}</p>
                 <input
                   type="text"
-                  placeholder="Ciudad"
+                  placeholder={t('location')}
                   value={form.ubicacion}
                   onChange={(e) => setForm({ ...form, ubicacion: e.target.value })}
                   className="w-full px-4 py-2 bg-gray-50 rounded-xl text-[10px] focus:bg-white focus:ring-1 focus:ring-red-500 transition-all outline-none font-bold"
                 />
               </div>
               <div>
-                <p className="text-[7px] sm:text-[10px] font-black uppercase text-gray-400 ml-3 mb-1">Web</p>
+                <p className="text-[7px] sm:text-[10px] font-black uppercase text-gray-400 ml-3 mb-1">{t('website')}</p>
                 <input
                   type="text"
                   placeholder="https://..."
@@ -384,7 +420,7 @@ const Configuraciones = () => {
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-2">
               <Key className="w-4 h-4 text-red-600" />
-              <span className="text-[9px] sm:text-xs font-black uppercase tracking-widest text-gray-900">Seguridad</span>
+              <span className="text-[9px] sm:text-xs font-black uppercase tracking-widest text-gray-900">{t('security')}</span>
             </div>
             <button 
               onClick={() => setMostrarPasswords(!mostrarPasswords)}
@@ -396,7 +432,7 @@ const Configuraciones = () => {
           <div className="space-y-2">
             <input
               type={mostrarPasswords ? "text" : "password"}
-              placeholder="Contraseña Actual"
+              placeholder={t('current_password')}
               value={form.passwordActual}
               onChange={(e) => setForm({ ...form, passwordActual: e.target.value })}
               className="w-full px-4 py-2 bg-gray-50 rounded-xl text-[10px] sm:text-[13px] outline-none border border-transparent focus:border-red-100 font-bold"
@@ -404,14 +440,14 @@ const Configuraciones = () => {
             <div className="grid grid-cols-2 gap-2">
               <input
                 type={mostrarPasswords ? "text" : "password"}
-                placeholder="Nueva"
+                placeholder={t('new_password_label')}
                 value={form.passwordNueva}
                 onChange={(e) => setForm({ ...form, passwordNueva: e.target.value })}
                 className="w-full px-4 py-2 bg-gray-50 rounded-xl text-[10px] sm:text-[13px] outline-none border border-transparent focus:border-red-100 font-bold"
               />
               <input
                 type={mostrarPasswords ? "text" : "password"}
-                placeholder="Confirmar"
+                placeholder={t('confirm_password_label')}
                 value={form.confirmarPassword}
                 onChange={(e) => setForm({ ...form, confirmarPassword: e.target.value })}
                 className="w-full px-4 py-2 bg-gray-50 rounded-xl text-[10px] sm:text-[13px] outline-none border border-transparent focus:border-red-100 font-bold"
@@ -424,7 +460,7 @@ const Configuraciones = () => {
             className="mt-4 w-full py-3 bg-red-600 text-white font-black uppercase tracking-[0.2em] text-[10px] sm:text-[13px] rounded-xl shadow-lg shadow-red-100 hover:bg-red-700 active:scale-[0.98] transition-all flex items-center justify-center gap-2 disabled:opacity-50"
           >
             <Save className="w-3.5 h-3.5 sm:w-5 sm:h-5" />
-            <span>Guardar Ajustes</span>
+            <span>{t('save_settings')}</span>
           </button>
         </div>
 
@@ -433,7 +469,7 @@ const Configuraciones = () => {
           <div className="bg-white border border-red-50 rounded-2xl p-4 shadow-sm">
              <div className="flex items-center gap-2 mb-3">
               <UserX className="w-4 h-4 text-red-600" />
-              <span className="text-[9px] font-black uppercase tracking-widest text-gray-900">Bloqueados ({bloqueados.length})</span>
+              <span className="text-[9px] font-black uppercase tracking-widest text-gray-900">{t('blocked_users')} ({bloqueados.length})</span>
             </div>
             <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
               {bloqueados.map((u) => (
@@ -461,8 +497,8 @@ const Configuraciones = () => {
             <div className="absolute inset-0 bg-red-600 translate-y-full group-hover:translate-y-0 transition-transform duration-300" />
             <div className="relative z-10 flex flex-col items-center">
               <ShieldAlert className="w-5 h-5 mb-1 group-hover:scale-110 transition-transform" />
-              <span className="text-[10px] font-black uppercase tracking-[0.3em]">Eliminar mi Cuenta</span>
-              <span className="text-[7px] font-bold opacity-60 uppercase tracking-tighter">Acción irreversible • Se borrarán todos tus datos</span>
+              <span className="text-[10px] font-black uppercase tracking-[0.3em]">{t('delete_account_title')}</span>
+              <span className="text-[7px] font-bold opacity-60 uppercase tracking-tighter">{t('delete_account_desc')}</span>
             </div>
           </button>
         </div>
@@ -486,7 +522,7 @@ const Configuraciones = () => {
       setUser(null);
       localStorage.removeItem("token");
       window.location.href = "/login";
-    } catch { setErrorMsg("Error al eliminar cuenta."); }
+    } catch { setErrorMsg(t('delete_account_error')); }
     finally { setLoading(false); setShowDeleteModal(false); }
   }
 };

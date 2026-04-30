@@ -3,6 +3,8 @@ import { registrarUsuario } from "../../api/auth";
 import { useNavigate } from "react-router-dom";
 import Footer from "../UI/Footer";
 import { User, Mail, Lock, Eye, EyeOff, UserPlus } from "lucide-react";
+import { useLanguage } from "../../context/LanguageContext";
+import LanguageSelector from "../UI/LanguageSelector";
 
 export default function RegisterForm() {
   const [form, setForm] = useState({
@@ -15,6 +17,7 @@ export default function RegisterForm() {
   const [mostrarPassword, setMostrarPassword] = useState(false);
 
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   const handleChange = (e) => {
     setForm({ ...form, [e.target.name]: e.target.value });
@@ -23,7 +26,7 @@ export default function RegisterForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.nombre.trim() || !form.email.trim() || !form.password.trim()) {
-      setErrorMsg("Por favor completa todos los campos.");
+      setErrorMsg(t('fill_fields'));
       return;
     }
     setLoading(true);
@@ -32,7 +35,7 @@ export default function RegisterForm() {
       await registrarUsuario(form);
       navigate("/login");
     } catch (error) {
-      setErrorMsg(error.msg || "Error al registrar. Intenta de nuevo.");
+      setErrorMsg(error.msg || t('error'));
     } finally {
       setLoading(false);
     }
@@ -40,13 +43,14 @@ export default function RegisterForm() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gray-50 relative overflow-hidden">
+      <LanguageSelector />
       <div className="absolute top-0 left-0 -ml-20 -mt-20 w-80 h-80 bg-red-100 rounded-full blur-3xl opacity-30"></div>
 
       <main className="flex flex-1 items-center justify-center px-4 z-10 py-4 sm:py-0">
         <div className="w-full max-w-md bg-white shadow-2xl rounded-2xl sm:rounded-[2rem] overflow-hidden border border-red-50">
           <div className="bg-red-600 p-4 sm:p-8 text-center text-white">
-            <h2 className="text-xl sm:text-3xl font-extrabold tracking-tight">Crea tu cuenta</h2>
-            <p className="text-red-100 mt-1 sm:mt-2 text-[10px] sm:text-base opacity-90">Únete a la comunidad Jandochat</p>
+            <h2 className="text-xl sm:text-3xl font-extrabold tracking-tight">{t('create_account')}</h2>
+            <p className="text-red-100 mt-1 sm:mt-2 text-[10px] sm:text-base opacity-90">{t('register_subtitle')}</p>
           </div>
 
           <form onSubmit={handleSubmit} className="p-4 sm:p-8 space-y-2.5 sm:space-y-5">
@@ -57,7 +61,7 @@ export default function RegisterForm() {
             )}
 
             <div className="space-y-0.5 sm:space-y-1">
-              <label className="text-[9px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest px-1">Usuario</label>
+              <label className="text-[9px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest px-1">{t('user_label')}</label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
                   <User className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 group-focus-within:text-red-500 transition-colors" />
@@ -68,14 +72,14 @@ export default function RegisterForm() {
                   value={form.nombre}
                   onChange={handleChange}
                   required
-                  placeholder="Tu nombre de usuario"
+                  placeholder={t('name_placeholder')}
                   className="block w-full pl-9 sm:pl-11 pr-4 py-2 sm:py-3 bg-gray-50 border-transparent rounded-xl sm:rounded-2xl text-xs sm:text-base focus:bg-white focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all outline-none"
                 />
               </div>
             </div>
 
             <div className="space-y-0.5 sm:space-y-1">
-              <label className="text-[9px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest px-1">Email</label>
+              <label className="text-[9px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest px-1">{t('email_label')}</label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
                   <Mail className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 group-focus-within:text-red-500 transition-colors" />
@@ -86,14 +90,14 @@ export default function RegisterForm() {
                   value={form.email}
                   onChange={handleChange}
                   required
-                  placeholder="ejemplo@correo.com"
+                  placeholder={t('email_placeholder')}
                   className="block w-full pl-9 sm:pl-11 pr-4 py-2 sm:py-3 bg-gray-50 border-transparent rounded-xl sm:rounded-2xl text-xs sm:text-base focus:bg-white focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all outline-none"
                 />
               </div>
             </div>
 
             <div className="space-y-0.5 sm:space-y-1">
-              <label className="text-[9px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest px-1">Contraseña</label>
+              <label className="text-[9px] sm:text-xs font-bold text-gray-400 uppercase tracking-widest px-1">{t('password_label')}</label>
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-3 sm:pl-4 flex items-center pointer-events-none">
                   <Lock className="h-4 w-4 sm:h-5 sm:w-5 text-gray-400 group-focus-within:text-red-500 transition-colors" />
@@ -124,17 +128,17 @@ export default function RegisterForm() {
                 }`}
             >
               <UserPlus className="w-4 h-4 sm:w-5 sm:h-5" />
-              {loading ? "Registrando..." : "Crear cuenta"}
+              {loading ? t('registering') : t('register_btn_text')}
             </button>
 
             <div className="pt-2 sm:pt-4 text-center">
-              <span className="text-[10px] sm:text-sm text-gray-500">¿Ya tienes cuenta? </span>
+              <span className="text-[10px] sm:text-sm text-gray-500">{t('already_have_account')} </span>
               <button
                 type="button"
                 onClick={() => navigate("/login")}
                 className="text-[10px] sm:text-sm font-black text-red-600 hover:text-red-700 underline underline-offset-4 uppercase tracking-tighter"
               >
-                Inicia sesión
+                {t('login_now')}
               </button>
             </div>
           </form>

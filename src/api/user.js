@@ -10,10 +10,15 @@ export async function getUserById(id) {
   return res.data;
 }
 
-export async function getUsuariosAleatorios() {
-  const res = await api.get("/api/users/aleatorios");
-  return res.data;
-}
+export const getUsuariosAleatorios = async () => {
+  const { data } = await api.get("/api/users/aleatorios");
+  return data;
+};
+
+export const reportUsuario = async (id, payload) => {
+  const { data } = await api.post(`/api/users/${id}/reportar`, payload);
+  return data;
+};
 
 export async function actualizarPerfil(datos) {
   const res = await api.put("/api/users/profile", datos);

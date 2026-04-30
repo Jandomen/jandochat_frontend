@@ -3,8 +3,10 @@ import { Archive, Trash2, Eye, Film } from "lucide-react";
 import { getArchivedStories, deleteArchivedStory } from "../../api/stories";
 import { useModal } from "../../context/ModalContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function StoryArchive() {
+    const { t } = useLanguage();
     const [stories, setStories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedStory, setSelectedStory] = useState(null);
@@ -26,14 +28,14 @@ export default function StoryArchive() {
     }, []);
 
     const handleDelete = async (id) => {
-        const confirmed = await showConfirm("Eliminar permanentemente", "¿Eliminar esta historia del archivo para siempre?");
+        const confirmed = await showConfirm(t('delete_permanently'), t('confirm_delete_archive_story'));
         if (!confirmed) return;
         try {
             await deleteArchivedStory(id);
             setStories((prev) => prev.filter((s) => s._id !== id));
-            success("Historia eliminada permanentemente");
+            success(t('story_deleted_permanent'));
         } catch (err) {
-            showError("Error al eliminar");
+            showError(t('error'));
         }
     };
 
@@ -49,13 +51,13 @@ export default function StoryArchive() {
         <div className="bg-white border border-gray-100 rounded-[2rem] p-4 sm:p-6 shadow-sm">
             <div className="flex items-center gap-2 mb-4">
                 <Archive className="w-4 h-4 text-red-600" />
-                <span className="text-[9px] sm:text-xs font-black uppercase tracking-widest text-gray-900">Archivo de Historias</span>
+                <span className="text-[9px] sm:text-xs font-black uppercase tracking-widest text-gray-900">{t('story_archives')}</span>
             </div>
 
             {stories.length === 0 ? (
                 <div className="py-8 text-center opacity-10">
                     <Archive className="w-10 h-10 mx-auto mb-2" />
-                    <p className="font-black uppercase tracking-widest text-[8px]">Vacío</p>
+                    <p className="font-black uppercase tracking-widest text-[8px]">{t('empty')}</p>
                 </div>
             ) : (
                 <div className="grid grid-cols-4 sm:grid-cols-5 gap-2">

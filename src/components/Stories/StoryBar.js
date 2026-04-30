@@ -2,10 +2,14 @@ import React, { useState, useEffect } from "react";
 import { Plus } from "lucide-react";
 import { getStoriesFeed } from "../../api/stories";
 import useAuth from "../../hooks/useAuth";
+import { useSocket } from "../../context/SocketContext";
+import { useLanguage } from "../../context/LanguageContext";
 import StoryViewer from "./StoryViewer";
 import StoryEditor from "./StoryEditor";
 
 export default function StoryBar() {
+    const { socket } = useSocket();
+    const { t } = useLanguage();
     const [storyGroups, setStoryGroups] = useState([]);
     const [viewerOpen, setViewerOpen] = useState(false);
     const [editorOpen, setEditorOpen] = useState(false);
@@ -24,6 +28,20 @@ export default function StoryBar() {
     useEffect(() => {
         fetchStories();
     }, []);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const handleUpdate = () => fetchStories();
+
+        socket.on("nuevaHistoria", handleUpdate);
+        socket.on("eliminarHistoria", handleUpdate);
+
+        return () => {
+            socket.off("nuevaHistoria", handleUpdate);
+            socket.off("eliminarHistoria", handleUpdate);
+        };
+    }, [socket]);
 
     const openViewer = (idx) => {
         setSelectedGroupIdx(idx);
@@ -61,7 +79,7 @@ export default function StoryBar() {
                             </div>
                         </div>
                         <span className="text-[7px] sm:text-[10px] font-black text-gray-400 uppercase tracking-tighter w-[32px] sm:w-[72px] text-center truncate">
-                            Tú
+                            {t('you_label')}
                         </span>
                     </button>
 
@@ -94,7 +112,7 @@ export default function StoryBar() {
                                     )}
                                 </div>
                                 <span className="text-[7px] sm:text-[10px] font-black text-gray-400 w-[32px] sm:w-[72px] text-center truncate uppercase tracking-tighter">
-                                    {group.usuario._id === user?._id ? "Tú" : group.usuario.nombre?.split(" ")[0]}
+                                    {group.usuario._id === user?._id ? t('you_label') : group.usuario.nombre?.split(" ")[0]}
                                 </span>
                             </button>
                         );

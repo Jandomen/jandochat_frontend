@@ -13,6 +13,7 @@ import { useToast } from "./ToastContext";
 import * as notiAPI from "../api/notificaciones";
 import { getPostById } from "../api/posts";
 import { NOTIF_SOUNDS } from "../utils/sounds";
+import { useLanguage } from "./LanguageContext";
 
 const NotificationsContext = createContext();
 
@@ -23,6 +24,7 @@ export const NotificationsProvider = ({ children }) => {
   });
 
   const { user } = useAuth();
+  const { t } = useLanguage();
   const { success: showToast, error: showErrorToast } = useToast();
   const navigate = useNavigate();
   const nuevaNotificacionListener = useRef(null);
@@ -44,6 +46,7 @@ export const NotificationsProvider = ({ children }) => {
 
       case "comentario":
       case "respuesta":
+      case "mencion":
         if (publicacion) {
           const postId = publicacion._id || publicacion;
           navigateTo = "/usuarios";
@@ -105,9 +108,24 @@ export const NotificationsProvider = ({ children }) => {
     const onNuevaNotificacion = (notificacion) => {
       setNotificaciones((prev) => [notificacion, ...prev]);
 
-      const toastMessage = notificacion.mensaje || "Nueva notificación";
+      const sender = notificacion.emisor?.nombre || "";
+      let toastMessage;
+      switch (notificacion.tipo) {
+        case "mensaje": toastMessage = `${sender} ${t('sent_you_message')}`; break;
+        case "reaccion": toastMessage = `${sender} ${t('liked_your_post')}`; break;
+        case "comentario": toastMessage = `${sender} ${t('commented_on_post')}`; break;
+        case "respuesta": toastMessage = `${sender} ${t('responded_comment')}`; break;
+        case "mencion": toastMessage = `${sender} ${t('mentioned_you')}`; break;
+        case "compartir": toastMessage = `${sender} ${t('shared_post_noti')}`; break;
+        case "sistema":
+        case "seguidor": toastMessage = `${sender} ${t('followed_you')}`; break;
+        default: toastMessage = notificacion.mensaje || t('new_notification');
+      }
+      
       const navigation = getNavigationFromNotification(notificacion);
-      showToast(toastMessage, "info", 3000, navigation);
+      const emisorFoto = notificacion.emisor?.fotoPerfil || null;
+      
+      showToast(toastMessage, 4000, emisorFoto, navigation);
 
       if (sonidoHabilitado) {
         const soundType = user?.configuracionStatus?.sonidoTipo || "bleep1";
@@ -139,7 +157,7 @@ export const NotificationsProvider = ({ children }) => {
       socketNotification.off("connect_error");
       socketNotification.disconnect();
     };
-  }, [user, sonidoHabilitado, showToast, getNavigationFromNotification]);
+  }, [user, sonidoHabilitado, showToast, getNavigationFromNotification, t]);
 
 
   const agregarNotificacion = (notif) => {
@@ -237,6 +255,7 @@ export const NotificationsProvider = ({ children }) => {
       case "comentario":
       case "respuesta":
       case "reaccion":
+      case "mencion":
         if (publicacion) {
           const postId = publicacion._id || publicacion;
           // Verify the post still exists before navigating

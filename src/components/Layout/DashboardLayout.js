@@ -3,7 +3,6 @@ import Header from "../UI/Header";
 import Footer from "../UI/Footer";
 import {
   MessageCircle,
-  Users,
   Bell,
   User,
   Settings,
@@ -11,20 +10,29 @@ import {
   X,
   Home,
   Plus,
-  Search
+  Search,
+  Bookmark,
+  Play,
+  Camera
 } from "lucide-react";
 import { useNotificaciones } from "../../context/NotificationsContext";
 import { useNavigate, useLocation } from "react-router-dom";
+import { useLanguage } from "../../context/LanguageContext";
 
 const menuItems = [
-  { label: "Conversaciones", icon: MessageCircle, path: "/chat" },
-  { label: "Usuarios", icon: Users, path: "/usuarios" },
-  { label: "Mi Perfil", icon: User, path: "/perfil" },
-  { label: "Notificaciones", icon: Bell, path: "/notificaciones" },
-  { label: "Configuraciones", icon: Settings, path: "/configuraciones" },
+  { id: "usuarios", labelKey: "home", icon: Home, path: "/usuarios" },
+  { id: "explorar", labelKey: "explore", icon: Search, path: "/buscar" },
+  { id: "conversaciones", labelKey: "messages", icon: MessageCircle, path: "/chat" },
+  { id: "baul", labelKey: "baul", icon: Bookmark, path: "/baul" },
+  { id: "videos", labelKey: "videos", icon: Play, path: "/videos" },
+  { id: "galeria", labelKey: "gallery_tab", icon: Camera, path: "/galeria" },
+  { id: "perfil", labelKey: "profile", icon: User, path: "/perfil" },
+  { id: "notificaciones", labelKey: "notifications", icon: Bell, path: "/notificaciones" },
+  { id: "configuraciones", labelKey: "settings", icon: Settings, path: "/configuraciones" },
 ];
 
 export default function DashboardLayout({ children }) {
+  const { t } = useLanguage();
   const [menuOpen, setMenuOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const { noLeidasCount = 0 } = useNotificaciones();
@@ -33,7 +41,7 @@ export default function DashboardLayout({ children }) {
   const isChatPrivado = location.pathname.includes('/chat/') && location.pathname !== '/chat';
 
   return (
-    <div className="flex flex-col h-screen bg-gray-50 select-none">
+    <div className="flex flex-col h-screen bg-gray-50 select-none overflow-x-hidden">
       <Header onMenuToggle={() => setMenuOpen(!menuOpen)} />
 
       <main className={`flex flex-1 relative scrollbar-hide ${isChatPrivado ? 'overflow-hidden' : 'overflow-y-auto'}`}>
@@ -120,7 +128,7 @@ export default function DashboardLayout({ children }) {
           `}
         >
           <div className="flex items-center justify-between p-6 border-b border-red-50 mb-4">
-            {!collapsed && <div className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-red-700 to-red-500 bg-clip-text text-transparent">Navegación</div>}
+            {!collapsed && <div className="font-extrabold text-xs tracking-tight bg-gradient-to-r from-red-700 to-red-500 bg-clip-text text-transparent uppercase tracking-widest">{t('navigation') || 'Navegación'}</div>}
             <button
               onClick={() => setCollapsed(!collapsed)}
               className="p-2 rounded-xl hover:bg-red-50 text-red-600 transition-colors hidden md:block"
@@ -140,11 +148,12 @@ export default function DashboardLayout({ children }) {
           </div>
 
           <nav className="px-3 space-y-1">
-            {menuItems.map(({ label, icon: Icon, path }) => {
+            {menuItems.map(({ id, labelKey, icon: Icon, path }) => {
               const isActive = location.pathname === path;
+              const label = t(labelKey);
               return (
                 <div
-                  key={label}
+                  key={id}
                   onClick={() => {
                     navigate(path);
                     setMenuOpen(false);
@@ -162,7 +171,7 @@ export default function DashboardLayout({ children }) {
                   <Icon className={`w-4 h-4 flex-shrink-0 transition-transform group-hover:scale-110 ${isActive ? 'text-red-700' : ''}`} />
                   {!collapsed && <span className="text-[7px] sm:text-[10px] font-black tracking-tight uppercase">{label}</span>}
 
-                  {label === "Notificaciones" && noLeidasCount > 0 && (
+                  {id === "notificaciones" && noLeidasCount > 0 && (
                     <span className={`
                       bg-red-600 text-white text-[10px] font-bold rounded-full w-5 h-5 flex items-center justify-center shadow-lg animate-bounce
                       ${collapsed ? 'absolute -top-1 -right-1' : ''}

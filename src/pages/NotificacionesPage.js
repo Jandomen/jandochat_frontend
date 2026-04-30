@@ -1,10 +1,12 @@
 import React, { useState } from "react";
 import { useNotificaciones } from "../context/NotificationsContext";
+import { useLanguage } from "../context/LanguageContext";
 import { useModal } from "../context/ModalContext";
 import { useToast } from "../context/ToastContext";
 import { Bell, BellOff, CheckCheck, Trash2, Clock, ChevronRight } from "lucide-react";
 
 export default function NotificacionesPage() {
+  const { t } = useLanguage();
   const {
     notificaciones,
     marcarTodasComoLeidasEnBackend,
@@ -22,6 +24,21 @@ export default function NotificacionesPage() {
     await handleNotificationClick(notificacion);
   };
 
+  const translateMessage = (n) => {
+    const sender = n.emisor?.nombre || "";
+    switch (n.tipo) {
+      case "mensaje": return `${sender} ${t('sent_you_message')}`;
+      case "reaccion": return `${sender} ${t('liked_your_post')}`;
+      case "comentario": return `${sender} ${t('commented_on_post')}`;
+      case "respuesta": return `${sender} ${t('responded_comment')}`;
+      case "mencion": return `${sender} ${t('mentioned_you')}`;
+      case "compartir": return `${sender} ${t('shared_post_noti')}`;
+      case "sistema":
+      case "seguidor": return `${sender} ${t('followed_you')}`;
+      default: return n.mensaje || t('new_notification');
+    }
+  };
+
   return (
     <div className="flex flex-col h-full bg-white">
       {/* Header section */}
@@ -32,8 +49,8 @@ export default function NotificacionesPage() {
               <Bell className="w-4 h-4 sm:w-8 sm:h-8" />
             </div>
             <div>
-              <h1 className="text-sm sm:text-3xl font-black text-gray-900 tracking-tight">Notificaciones</h1>
-              <p className="text-[8px] sm:text-sm font-black text-gray-400 uppercase tracking-widest">Recientes</p>
+              <h1 className="text-sm sm:text-3xl font-black text-gray-900 tracking-tight">{t('notifications_title')}</h1>
+              <p className="text-[8px] sm:text-sm font-black text-gray-400 uppercase tracking-widest">{t('recent')}</p>
             </div>
           </div>
         </div>
@@ -45,7 +62,7 @@ export default function NotificacionesPage() {
             className="flex-1 flex items-center justify-center gap-1.5 py-2 sm:py-3 bg-gray-50 text-gray-400 font-black rounded-xl sm:rounded-2xl hover:bg-red-50 hover:text-red-600 transition-all border border-gray-100"
           >
             <CheckCheck className="w-3 h-3" />
-            <span className="text-[8px] sm:text-xs uppercase tracking-tighter">Leer todo</span>
+            <span className="text-[8px] sm:text-xs uppercase tracking-tighter">{t('read_all')}</span>
           </button>
           <button
             onClick={handleEliminarTodas}
@@ -53,7 +70,7 @@ export default function NotificacionesPage() {
             className="flex-1 flex items-center justify-center gap-1.5 py-2 sm:py-3 bg-red-50 text-red-600 font-black rounded-xl sm:rounded-2xl hover:bg-red-600 hover:text-white transition-all border border-red-100"
           >
             <Trash2 className="w-3 h-3" />
-            <span className="text-[8px] sm:text-xs uppercase tracking-tighter">Limpiar</span>
+            <span className="text-[8px] sm:text-xs uppercase tracking-tighter">{t('clear')}</span>
           </button>
         </div>
       </div>
@@ -63,7 +80,7 @@ export default function NotificacionesPage() {
         {notificaciones.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-20 text-center opacity-30 select-none">
             <BellOff className="w-20 h-20 text-gray-400 mb-4" />
-            <p className="text-xl font-black text-gray-500 uppercase tracking-widest">Sin notificaciones</p>
+            <p className="text-xl font-black text-gray-500 uppercase tracking-widest">{t('no_notifications')}</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -94,10 +111,10 @@ export default function NotificacionesPage() {
 
                   <div className="flex-1 min-w-0">
                     <h4 className={`text-[10px] sm:text-sm font-black ${n.leido ? "text-gray-600" : "text-gray-900"}`}>
-                      {n.emisor?.nombre || "Sistema"}
+                      {n.emisor?.nombre || t('system')}
                     </h4>
                     <p className={`text-[10px] sm:text-sm line-clamp-2 ${n.leido ? "text-gray-500" : "text-gray-800 font-medium"} mt-0.5 leading-tight`}>
-                      {n.mensaje}
+                      {translateMessage(n)}
                     </p>
                     <div className="flex items-center gap-1.5 mt-1 text-[7px] sm:text-[10px] font-bold text-gray-400 uppercase tracking-wider">
                       <Clock className="w-2 h-2 sm:w-3 sm:h-3" />
@@ -127,27 +144,27 @@ export default function NotificacionesPage() {
   );
 
   async function handleEliminarUna(id) {
-    const confirmed = await showConfirm("Eliminar", "¿Eliminar esta notificación?");
+    const confirmed = await showConfirm(t('delete_notification'), t('confirm_delete_notification'));
     if (!confirmed) return;
     setLoading(true);
     try { 
       await eliminarNotificacionCompleta(id);
-      success("Notificación eliminada");
+      success(t('notification_deleted'));
     } catch { 
-      showError("Error al eliminar");
+      showError(t('error'));
     }
     finally { setLoading(false); }
   }
 
   async function handleEliminarTodas() {
-    const confirmed = await showConfirm("Limpiar notificaciones", "¿Eliminar TODAS las notificaciones?");
+    const confirmed = await showConfirm(t('clear_notifications'), t('confirm_clear_all_notifications'));
     if (!confirmed) return;
     setLoading(true);
     try { 
       await eliminarTodas();
-      success("Notificaciones eliminadas");
+      success(t('notifications_deleted') || "Notificaciones eliminadas");
     } catch { 
-      showError("Error al eliminar");
+      showError(t('error'));
     }
     finally { setLoading(false); }
   }
@@ -156,9 +173,9 @@ export default function NotificacionesPage() {
     setLoading(true);
     try { 
       await marcarTodasComoLeidasEnBackend();
-      success("Todas marcadas como leídas");
+      success(t('all_marked_read'));
     } catch { 
-      showError("Error");
+      showError(t('error'));
     }
     finally { setLoading(false); }
   }

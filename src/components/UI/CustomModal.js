@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { createPortal } from "react-dom";
 import { X, Check, AlertCircle, HelpCircle } from "lucide-react";
+import { useLanguage } from "../../context/LanguageContext";
 
 const CustomModal = ({
     isOpen,
@@ -9,12 +10,17 @@ const CustomModal = ({
     title,
     message,
     type = "alert",
-    placeholder = "Escribe aquí...",
+    placeholder,
     defaultValue = "",
-    confirmText = "Aceptar",
-    cancelText = "Cancelar"
+    confirmText,
+    cancelText
 }) => {
+    const { t } = useLanguage();
     const [inputValue, setInputValue] = useState(defaultValue);
+
+    const resolvedConfirmText = confirmText || t('confirm');
+    const resolvedCancelText = cancelText || t('cancel');
+    const resolvedPlaceholder = placeholder || t('write_here');
 
     useEffect(() => {
         if (isOpen) {
@@ -65,7 +71,7 @@ const CustomModal = ({
                                 type="text"
                                 value={inputValue}
                                 onChange={(e) => setInputValue(e.target.value)}
-                                placeholder={placeholder}
+                                placeholder={resolvedPlaceholder}
                                 className="w-full px-4 sm:px-6 py-2.5 sm:py-4 bg-gray-50 border border-transparent focus:bg-white focus:border-red-500/30 rounded-xl sm:rounded-2xl outline-none transition-all font-black uppercase text-[8px] sm:text-[10px] tracking-widest text-red-600 placeholder:text-gray-300 shadow-inner"
                                 onKeyDown={(e) => {
                                     if (e.key === "Enter") onConfirm(inputValue);
@@ -81,7 +87,7 @@ const CustomModal = ({
                             onClick={onClose}
                             className="flex-1 px-4 sm:px-6 py-2.5 sm:py-4 rounded-xl sm:rounded-2xl bg-gray-50 text-gray-400 font-black uppercase text-[8px] sm:text-[10px] tracking-widest hover:bg-gray-100 transition-all border border-transparent"
                         >
-                            {cancelText}
+                            {resolvedCancelText}
                         </button>
                     )}
                     <button
@@ -89,7 +95,7 @@ const CustomModal = ({
                         className="flex-1 px-4 sm:px-6 py-2.5 sm:py-4 rounded-xl sm:rounded-2xl bg-red-600 text-white font-black uppercase text-[8px] sm:text-[10px] tracking-[0.2em] sm:tracking-[0.3em] hover:bg-red-700 shadow-lg shadow-red-200 transition-all active:scale-95 flex items-center justify-center gap-1.5 sm:gap-2"
                     >
                         <Check className="w-3 h-3 sm:w-4 sm:h-4" />
-                        <span>{confirmText}</span>
+                        <span>{resolvedConfirmText}</span>
                     </button>
                 </div>
             </div>

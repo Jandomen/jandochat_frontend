@@ -17,22 +17,36 @@ export default function useSocket(eventHandlers = {}) {
       socket.connect();
     }
 
+    const onConnect = () => {
+      // console.log("Socket re-connected, re-joining rooms...");
+      socket.emit("join-user", user._id);
+    };
+
+    socket.on("connect", onConnect);
     socket.emit("join-user", user._id);
 
-    const handlers = handlersRef.current;
-    Object.entries(handlers).forEach(([event, handler]) => {
-      socket.on(event, handler);
+    // Dynamic listener that always uses the latest handler
+    const createListener = (eventName) => (data) => {
+      if (handlersRef.current[eventName]) {
+        handlersRef.current[eventName](data);
+      }
+    };
+
+    const listeners = {};
+    Object.keys(eventHandlers).forEach((event) => {
+      listeners[event] = createListener(event);
+      socket.on(event, listeners[event]);
     });
 
     return () => {
-      Object.entries(handlers).forEach(([event, handler]) => {
-        socket.off(event, handler);
+      socket.off("connect", onConnect);
+      Object.entries(listeners).forEach(([event, listener]) => {
+        socket.off(event, listener);
       });
-      if (socket.connected) {
-        socket.disconnect();
-      }
+      // socket.disconnect(); // We keep it connected as a singleton
     };
-  }, [user?._id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?._id]); // Only re-setup on user change
 
   return socket;
 }

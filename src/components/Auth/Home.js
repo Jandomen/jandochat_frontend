@@ -1,10 +1,15 @@
+import React from "react";
 import { Link } from "react-router-dom";
 import { LogIn, UserPlus } from "lucide-react";
+import { useLanguage } from "../../context/LanguageContext";
+import LanguageSelector from "../UI/LanguageSelector";
 
 export default function Home() {
+  const { t } = useLanguage();
 
   return (
     <div className="flex min-h-screen bg-[#8b0000] bg-opacity-95 text-white overflow-hidden relative">
+      <LanguageSelector />
       {/* Dynamic Background Elements */}
       <div className="absolute top-[-10%] left-[-10%] w-72 h-72 bg-red-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob"></div>
       <div className="absolute bottom-[-10%] right-[-10%] w-72 h-72 bg-pink-500 rounded-full mix-blend-multiply filter blur-3xl opacity-20 animate-blob animation-delay-2000"></div>
@@ -26,7 +31,7 @@ export default function Home() {
         </div>
 
         <p className="text-[11px] sm:text-xl md:text-2xl mb-6 sm:mb-12 text-red-100 opacity-90 font-medium tracking-wider max-w-[280px] sm:max-w-xl">
-          Conecta con el mundo en tiempo real con <span className="font-bold border-b-2 border-yellow-400">Jandochat</span>
+          {t('home_description') || "Conecta con el mundo en tiempo real"}
         </p>
 
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-6 w-full max-w-[220px] sm:max-w-lg px-2">
@@ -35,7 +40,7 @@ export default function Home() {
             className="flex items-center justify-center gap-1.5 bg-white text-red-700 hover:bg-red-50 font-black py-2 sm:py-5 px-4 sm:px-10 rounded-lg sm:rounded-3xl shadow-[0_10px_20px_rgba(0,0,0,0.3)] transition-all duration-300 transform hover:-translate-y-1 active:scale-95 group text-[9px] sm:text-xs md:text-sm uppercase tracking-widest"
           >
             <LogIn className="w-3.5 h-3.5 sm:w-6 sm:h-6 group-hover:rotate-12 transition-transform" />
-            <span>Entrar</span>
+            <span>{t('login_btn') || "Entrar"}</span>
           </Link>
 
           <Link
@@ -43,7 +48,7 @@ export default function Home() {
             className="flex items-center justify-center gap-1.5 bg-transparent border-[1.5px] border-white hover:bg-white hover:text-red-700 text-white font-black py-2 sm:py-5 px-4 sm:px-10 rounded-lg sm:rounded-3xl shadow-[0_10px_20px_rgba(200,0,0,0.1)] transition-all duration-300 transform hover:-translate-y-1 active:scale-95 group text-[9px] sm:text-xs md:text-sm uppercase tracking-widest"
           >
             <UserPlus className="w-3.5 h-3.5 sm:w-6 sm:h-6 group-hover:scale-110 transition-transform" />
-            <span>Registro</span>
+            <span>{t('register_btn') || "Registro"}</span>
           </Link>
         </div>
 

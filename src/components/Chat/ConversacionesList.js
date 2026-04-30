@@ -3,11 +3,13 @@ import useAuth from "../../hooks/useAuth";
 import { useModal } from "../../context/ModalContext";
 import { useToast } from "../../context/ToastContext";
 import { MessageSquare, Plus, Trash2, Clock, Search, X, Check, Film, Image as ImageIcon, Type } from "lucide-react";
+import { useLanguage } from "../../context/LanguageContext";
 import useSocket from "../../hooks/useSocket";
 import api from "../../api/axios";
 import { uploadMedia } from "../../api/posts";
 
 export default function ConversacionesList({ onSeleccionar, onCrearConversacion }) {
+  const { t } = useLanguage();
   const [conversaciones, setConversaciones] = useState([]);
   const [statuses, setStatuses] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -141,7 +143,7 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
 
     // Si es video y aún no se ha cortado (y es largo), forzar corte o esperar
     if (tipoNuevoStatus === "video" && videoDuracion > 20 && !videoCortado) {
-      showErrorToast("Debes confirmar el recorte del video primero");
+      showErrorToast(t('trim_video_error'));
       return;
     }
 
@@ -170,10 +172,10 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
       setVideoDuracion(0);
       setVideoTiempoInicio(0);
       setMostrarModalStatus(false);
-      success("Estado publicado con éxito");
+      success(t('status_published'));
     } catch (err) {
       console.error("Error al publicar estado:", err);
-      showErrorToast("Error al publicar estado");
+      showErrorToast(t('error'));
     } finally {
       setCargando(false);
     }
@@ -197,7 +199,7 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
   };
 
   const eliminarStatus = async (statusId) => {
-    const confirmed = await showConfirm("Eliminar historia", "¿Eliminar esta historia?");
+    const confirmed = await showConfirm(t('delete_notification'), t('confirm_delete_history'));
     if (!confirmed) return;
     try {
       const res = await fetch(`${process.env.REACT_APP_API_BACKEND}/api/status/${statusId}`, {
@@ -207,17 +209,17 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
       if (res.ok) {
         setStatuses(statuses.filter(s => s._id !== statusId));
         setStatusSeleccionado(null);
-        success("Historia eliminada");
+        success(t('history_deleted'));
       }
     } catch (err) {
       console.error("Error al eliminar status");
-      showErrorToast("Error al eliminar");
+      showErrorToast(t('error'));
     }
   };
 
   const eliminarConversacion = async (id, e) => {
     e.stopPropagation();
-    const confirmed = await showConfirm("Eliminar conversación", "¿Eliminar esta conversación?");
+    const confirmed = await showConfirm(t('delete_notification'), t('confirm_delete_conversation'));
     if (!confirmed) return;
 
     try {
@@ -227,10 +229,10 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
       });
       if (!res.ok) throw new Error("Error al eliminar");
       setConversaciones((prev) => prev.filter((c) => c._id !== id));
-      success("Conversación eliminada");
+      success(t('conversation_deleted'));
     } catch (err) {
       console.error(err);
-      showErrorToast("Error al eliminar");
+      showErrorToast(t('error'));
     }
   };
 
@@ -273,10 +275,10 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
       <div className="p-2 sm:p-8 pb-2 sm:pb-4 space-y-2 sm:space-y-6">
         <div className="flex justify-between items-end">
           <div>
-            <h2 className="text-lg sm:text-4xl font-black tracking-tighter text-gray-900 mb-0.5 sm:mb-1">Chats</h2>
+            <h2 className="text-lg sm:text-4xl font-black tracking-tighter text-gray-900 mb-0.5 sm:mb-1">{t('chats_title')}</h2>
             <div className="flex items-center gap-1 sm:gap-2">
               <div className="w-1 h-1 sm:w-2 sm:h-2 bg-green-500 rounded-full animate-pulse"></div>
-              <span className="text-[8px] sm:text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{conversaciones.length} Conversaciones</span>
+              <span className="text-[8px] sm:text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{conversaciones.length} {t('conversations_label')}</span>
             </div>
           </div>
           <button
@@ -291,7 +293,7 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
           <Search className="absolute left-3.5 sm:left-5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 sm:w-5 sm:h-5 text-gray-300 group-focus-within:text-red-500 transition-colors" />
           <input
             type="text"
-            placeholder="Buscar..."
+            placeholder={`${t('search')}...`}
             value={filtro}
             onChange={(e) => setFiltro(e.target.value)}
             className="w-full pl-9 sm:pl-14 pr-4 sm:pr-6 py-2 sm:py-5 bg-gray-50 border-none rounded-lg sm:rounded-3xl text-[10px] sm:text-sm focus:bg-white focus:ring-4 focus:ring-red-50 transition-all outline-none font-medium placeholder:text-gray-300"
@@ -313,7 +315,7 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
                 </div>
               </div>
             </div>
-            <span className="text-[8px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest transition-colors group-hover:text-red-600">Mi Estado</span>
+            <span className="text-[8px] sm:text-[10px] font-black text-gray-400 uppercase tracking-widest transition-colors group-hover:text-red-600">{t('my_status')}</span>
           </button>
 
           {statuses.map((status) => (
@@ -367,8 +369,8 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
               <MessageSquare className="w-12 h-12 text-red-200" />
             </div>
             <div>
-              <p className="text-gray-900 font-black text-lg">Sin conversaciones</p>
-              <p className="text-gray-400 text-sm font-medium">Empieza a chatear con alguien</p>
+              <p className="text-gray-900 font-black text-lg">{t('no_conversations')}</p>
+              <p className="text-gray-400 text-sm font-medium">{t('start_chatting_prompt')}</p>
             </div>
           </div>
         ) : (
@@ -396,20 +398,20 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
                   <div className="flex-1 min-w-0 z-10">
                     <div className="flex justify-between items-start mb-0.5 sm:mb-1">
                       <h4 className="font-black text-gray-900 group-hover:text-red-700 transition-colors truncate text-xs sm:text-base">
-                        {otro?.nombre || "Usuario"}
+                        {otro?.nombre || t('user_label')}
                       </h4>
                       <div className="flex items-center gap-1 text-[10px] text-gray-400 font-black uppercase tracking-widest">
                         <Clock className="w-3 h-3 text-red-300" />
-                        <span>Reciente</span>
+                        <span>{t('recent_label')}</span>
                       </div>
                     </div>
                     <div className="text-xs sm:text-sm text-gray-500 truncate font-medium">
                       {ultimoMsj ? (
                         <div className="flex items-center gap-2">
-                          {typeof ultimoMsj.emisor === 'string' ? (ultimoMsj.emisor === user?._id && <span className="text-[9px] sm:text-[10px] font-black text-red-400 uppercase tracking-tighter">Tú:</span>) : (ultimoMsj.emisor?._id === user?._id && <span className="text-[9px] sm:text-[10px] font-black text-red-400 uppercase tracking-tighter">Tú:</span>)}
+                          {typeof ultimoMsj.emisor === 'string' ? (ultimoMsj.emisor === user?._id && <span className="text-[9px] sm:text-[10px] font-black text-red-400 uppercase tracking-tighter">{t('you_label')}</span>) : (ultimoMsj.emisor?._id === user?._id && <span className="text-[9px] sm:text-[10px] font-black text-red-400 uppercase tracking-tighter">{t('you_label')}</span>)}
                           <span className="truncate">{ultimoMsj.contenido}</span>
                         </div>
-                      ) : <span className="italic text-gray-300">Inicia la conversación...</span>}
+                      ) : <span className="italic text-gray-300">{t('start_conversation_placeholder')}</span>}
                     </div>
                   </div>
 
@@ -436,8 +438,8 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
             <div className="p-4 sm:p-10 flex-1 overflow-y-auto z-10 space-y-4 sm:space-y-8">
               <div className="flex items-center justify-between">
                 <div>
-                  <h3 className="text-xl sm:text-4xl font-black text-gray-900 tracking-tighter leading-none">Comparte</h3>
-                  <p className="text-[8px] font-black uppercase tracking-[0.2em] text-red-500">Nuevo Estado</p>
+                  <h3 className="text-xl sm:text-4xl font-black text-gray-900 tracking-tighter leading-none">{t('share_status_title')}</h3>
+                  <p className="text-[8px] font-black uppercase tracking-[0.2em] text-red-500">{t('new_status_subtitle')}</p>
                 </div>
                 <button
                   onClick={() => { setMostrarModalStatus(false); setMediaArchivo(null); setPreviewUrl(null); }}
@@ -450,9 +452,9 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
               {/* Type Selectors */}
               <div className="flex p-2 bg-gray-50 rounded-[2rem] gap-1">
                 {[
-                  { id: "texto", icon: Type, label: "Texto" },
-                  { id: "imagen", icon: ImageIcon, label: "Imagen" },
-                  { id: "video", icon: Film, label: "Video" }
+                  { id: "texto", icon: Type, label: t('text_label') },
+                  { id: "imagen", icon: ImageIcon, label: t('image_label') },
+                  { id: "video", icon: Film, label: t('video_label') }
                 ].map(t => (
                   <button
                     key={t.id}
@@ -469,12 +471,12 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
                 <div className="relative">
                   <textarea
                     className="w-full h-64 p-10 bg-gray-50 rounded-[2.5rem] border-transparent focus:bg-white focus:ring-[15px] focus:ring-red-50 outline-none text-2xl transition-all font-black placeholder:text-gray-200 resize-none shadow-inner"
-                    placeholder="Escribe algo épico..."
+                    placeholder={t('write_epic_placeholder')}
                     value={nuevoStatus}
                     onChange={(e) => setNuevoStatus(e.target.value)}
                   />
                   <div className="absolute bottom-6 right-8 text-[10px] font-black text-gray-200 uppercase tracking-widest italic pt-2">
-                    Solo letras
+                    {t('only_text_label')}
                   </div>
                 </div>
               ) : (
@@ -489,7 +491,7 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
                         )}
                         <div className="absolute inset-0 bg-black/40 opacity-0 group-hover/preview:opacity-100 transition-opacity flex items-center justify-center">
                           <Plus className="w-12 h-12 text-white rotate-45" />
-                          <span className="text-white font-black uppercase text-[10px] tracking-widest ml-2">Cambiar</span>
+                          <span className="text-white font-black uppercase text-[10px] tracking-widest ml-2">{t('edit')}</span>
                         </div>
                       </div>
                     ) : (
@@ -497,7 +499,7 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
                         <div className="w-20 h-20 bg-white rounded-3xl shadow-xl flex items-center justify-center mx-auto mb-4 group-hover:rotate-12 transition-all">
                           {tipoNuevoStatus === "imagen" ? <ImageIcon className="w-8 h-8 text-red-500" /> : <Film className="w-8 h-8 text-red-500" />}
                         </div>
-                        <span className="text-[11px] font-black uppercase text-gray-400 tracking-[0.2em]">Cargar {tipoNuevoStatus}</span>
+                        <span className="text-[11px] font-black uppercase text-gray-400 tracking-[0.2em]">{t('load_media_label')} {t(tipoNuevoStatus + '_label')}</span>
                       </div>
                     )}
                     <input
@@ -525,10 +527,10 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
                           <div className="p-2 bg-red-600/20 rounded-xl">
                             <Film className="w-4 h-4 text-red-500" />
                           </div>
-                          <span className="text-[10px] font-black uppercase tracking-widest text-white/90">Ajustar Video</span>
+                          <span className="text-[10px] font-black uppercase tracking-widest text-white/90">{t('adjust_video_title')}</span>
                         </div>
                         <div className="px-3 py-1 bg-white/5 rounded-full border border-white/10">
-                          <span className="text-[10px] font-black text-red-400 capitalize">Max 20s</span>
+                          <span className="text-[10px] font-black text-red-400 capitalize">{t('max_20s_label')}</span>
                         </div>
                       </div>
 
@@ -562,8 +564,8 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
                           </div>
 
                           <div className="flex justify-between text-[9px] font-black uppercase tracking-widest">
-                            <span className="text-gray-500 italic">Segmento: {Math.floor(videoTiempoInicio)}s - {Math.floor(videoTiempoInicio + 20)}s</span>
-                            <span className="text-red-500">Auto-recorte activado</span>
+                            <span className="text-gray-500 italic">{t('segment_label')}: {Math.floor(videoTiempoInicio)}s - {Math.floor(videoTiempoInicio + 20)}s</span>
+                            <span className="text-red-500">{t('auto_trim_enabled')}</span>
                           </div>
 
                           <button
@@ -571,7 +573,7 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
                             disabled={cortandoVideo || videoCortado}
                             className={`w-full py-5 rounded-2xl font-black uppercase text-[10px] tracking-widest transition-all ${videoCortado ? 'bg-green-500/10 text-green-500 border border-green-500/20' : 'bg-red-600 text-white shadow-xl shadow-red-900/40 hover:-translate-y-1'}`}
                           >
-                            {cortandoVideo ? "Transformando..." : videoCortado ? <div className="flex items-center justify-center gap-2"><Check className="w-4 h-4" /> Listo para publicar</div> : "Confirmar Selección"}
+                            {cortandoVideo ? t('transforming_label') : videoCortado ? <div className="flex items-center justify-center gap-2"><Check className="w-4 h-4" /> {t('ready_to_publish_label')}</div> : t('confirm_selection_label')}
                           </button>
                         </div>
                       ) : (
@@ -580,8 +582,8 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
                             <Check className="w-5 h-5" />
                           </div>
                           <div>
-                            <p className="text-[10px] font-black uppercase text-green-500 tracking-widest">Perfecto</p>
-                            <p className="text-[9px] font-bold text-green-500/60 uppercase">Dura {videoDuracion.toFixed(1)}s (Dentro del límite)</p>
+                            <p className="text-[10px] font-black uppercase text-green-500 tracking-widest">{t('perfect_label')}</p>
+                            <p className="text-[9px] font-bold text-green-500/60 uppercase">{videoDuracion.toFixed(1)}s</p>
                           </div>
                         </div>
                       )}
@@ -597,7 +599,7 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
                 disabled={!nuevoStatus.trim() && !mediaArchivo && !videoCortado && (tipoNuevoStatus !== 'video' || videoDuracion <= 20)}
                 className="flex-1 py-6 bg-gradient-to-r from-red-600 to-red-700 text-white font-black rounded-[2rem] shadow-2xl shadow-red-200 hover:scale-[1.02] active:scale-95 transition-all disabled:opacity-40 uppercase text-[10px] tracking-[0.4em]"
               >
-                Publicar Ahora
+                {t('publish_now_button')}
               </button>
             </div>
           </div>
@@ -667,7 +669,7 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
                 <div className="flex items-center justify-between mb-4">
                   <div className="flex items-center gap-3">
                     <Clock className="w-5 h-5 text-white/50" />
-                    <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">{vistasStatus.length} Vistos</span>
+                    <span className="text-[10px] font-black text-white uppercase tracking-[0.2em]">{vistasStatus.length} {t('views_count_label')}</span>
                   </div>
                 </div>
                 <div className="flex -space-x-3 overflow-hidden h-10">
@@ -693,7 +695,7 @@ export default function ConversacionesList({ onSeleccionar, onCrearConversacion 
             {statusSeleccionado.usuario?._id !== user?._id && (
               <div className="p-10 text-center text-white/20 mt-auto">
                 <MessageSquare className="w-12 h-12 mx-auto mb-3 opacity-10" />
-                <p className="text-[10px] font-black uppercase tracking-[0.5em] mb-4">Pulsa para cerrar</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.5em] mb-4">{t('tap_to_close_label')}</p>
               </div>
             )}
           </div>

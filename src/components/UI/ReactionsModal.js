@@ -2,6 +2,7 @@ import { useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
+import { useLanguage } from "../../context/LanguageContext";
 
 const EMOJIS = {
     brutal: "🔥",
@@ -14,22 +15,23 @@ const EMOJIS = {
     respeto: "🫡"
 };
 
-const REACTION_LABELS = {
-    brutal: "Está brutal / tendencia",
-    acuerdo: "Totalmente de acuerdo",
-    blown: "Mind blown",
-    inteligente: "Inteligente",
-    apoyo: "Apoyo este proyecto",
-    colaboro: "Colaboro / me interesa participar",
-    respeto: "Respeto",
-    mirando: "Estoy mirando / interesante"
-};
-
 export default function ReactionsModal({ 
   reactions, 
   onClose 
 }) {
   const navigate = useNavigate();
+  const { t } = useLanguage();
+
+  const REACTION_LABELS = {
+    brutal: t('reaction_brutal'),
+    acuerdo: t('reaction_acuerdo'),
+    blown: t('reaction_blown'),
+    mirando: t('reaction_mirando'),
+    inteligente: t('reaction_inteligente'),
+    apoyo: t('reaction_apoyo'),
+    colaboro: t('reaction_colaboro'),
+    respeto: t('reaction_respeto')
+  };
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === "Escape") onClose();
@@ -64,7 +66,7 @@ export default function ReactionsModal({
       >
         {/* Header */}
         <div className="p-3 border-b border-gray-100 flex items-center justify-between bg-gradient-to-r from-red-600 to-red-500 shrink-0">
-          <h3 className="font-black text-white text-xs uppercase tracking-widest">Reacciones</h3>
+          <h3 className="font-black text-white text-xs uppercase tracking-widest">{t('reactions_label')}</h3>
           <button 
             onClick={onClose}
             className="p-1 text-white/80 hover:text-white transition-colors"
@@ -95,7 +97,7 @@ export default function ReactionsModal({
               </div>
             ))
           ) : (
-            <div className="text-center text-gray-400 py-6 text-[10px] uppercase font-black tracking-widest">No hay reacciones</div>
+            <div className="text-center text-gray-400 py-6 text-[10px] uppercase font-black tracking-widest">{t('no_reactions')}</div>
           )}
         </div>
       </div>

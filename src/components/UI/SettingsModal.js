@@ -1,8 +1,11 @@
 import { useEffect, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { X, Settings as SettingsIcon } from "lucide-react";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function SettingsModal({ isOpen, onClose, children }) {
+  const { t } = useLanguage();
+
   const handleKeyDown = useCallback((e) => {
     if (e.key === "Escape") onClose();
   }, [onClose]);
@@ -31,7 +34,7 @@ export default function SettingsModal({ isOpen, onClose, children }) {
             <div className="w-10 h-10 bg-red-100 rounded-2xl flex items-center justify-center">
               <SettingsIcon className="w-5 h-5 text-red-600" />
             </div>
-            <h2 className="text-xl font-black text-gray-900">Configuraciones</h2>
+            <h2 className="text-xl font-black text-gray-900">{t('settings_label')}</h2>
           </div>
           <button 
             onClick={onClose}

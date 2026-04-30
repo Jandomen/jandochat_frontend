@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { Camera, Image, FileText, X } from "lucide-react";
+import { useLanguage } from "../../context/LanguageContext";
 
 const MediaPickerModal = ({ isOpen, onClose, onSelect, filter = ["camera", "gallery", "files"] }) => {
+  const { t } = useLanguage();
   const [isRendered, setIsRendered] = useState(false);
 
   useEffect(() => {
@@ -18,27 +20,27 @@ const MediaPickerModal = ({ isOpen, onClose, onSelect, filter = ["camera", "gall
   const allOptions = [
     {
       id: "camera",
-      label: "Cámara",
+      label: t('camera_label'),
       icon: <Camera className="w-6 h-6 sm:w-8 sm:h-8" />,
       color: "from-red-500 to-pink-600",
       shadow: "shadow-red-200",
-      description: "Toma una foto"
+      description: t('camera_description')
     },
     {
       id: "gallery",
-      label: "Galería",
+      label: t('gallery_label'),
       icon: <Image className="w-6 h-6 sm:w-8 sm:h-8" />,
       color: "from-blue-500 to-indigo-600",
       shadow: "shadow-blue-200",
-      description: "Fotos y videos"
+      description: t('gallery_description')
     },
     {
       id: "files",
-      label: "Archivos",
+      label: t('files_label'),
       icon: <FileText className="w-6 h-6 sm:w-8 sm:h-8" />,
       color: "from-gray-600 to-gray-800",
       shadow: "shadow-gray-200",
-      description: "Documentos PDF"
+      description: t('files_description')
     }
   ];
 
@@ -61,7 +63,7 @@ const MediaPickerModal = ({ isOpen, onClose, onSelect, filter = ["camera", "gall
         <div className="w-12 h-1.5 bg-gray-200 rounded-full mx-auto mb-6 sm:hidden" />
         
         <div className="flex items-center justify-between mb-8">
-          <h3 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight uppercase">Compartir</h3>
+          <h3 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight uppercase">{t('share_media_title')}</h3>
           <button 
             onClick={onClose}
             className="p-2 hover:bg-red-50 text-gray-400 hover:text-red-600 rounded-full transition-colors"
@@ -101,7 +103,7 @@ const MediaPickerModal = ({ isOpen, onClose, onSelect, filter = ["camera", "gall
             onClick={onClose}
             className="w-full py-4 text-[10px] sm:text-xs font-black uppercase tracking-[0.3em] text-gray-400 hover:text-red-600 transition-colors"
           >
-            Cancelar
+            {t('cancel')}
           </button>
         </div>
       </div>

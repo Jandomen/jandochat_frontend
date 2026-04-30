@@ -15,21 +15,26 @@ import {
   deletePost,
   sharePost,
   editComentario,
-  deleteComentario
+  deleteComentario,
+  bookmarkPost
 } from "../../api/posts";
 import { useNavigate, useLocation } from "react-router-dom";
 import useAuth from "../../hooks/useAuth";
 import { useModal } from "../../context/ModalContext";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 import Slider from "react-slick";
 import "slick-carousel/slick/slick.css";
 import "slick-carousel/slick/slick-theme.css";
 import { Search, UserPlus, Users, Flame, Newspaper, X } from "lucide-react";
 import CreatePost from "./CreatePost";
 import PostCard from "./PostCard";
+import EditPostModal from "./EditPostModal";
 import StoryBar from "../Stories/StoryBar";
+import useSocket from "../../hooks/useSocket";
 
 export default function Usuarios() {
+  const { t } = useLanguage();
   const [search, setSearch] = useState("");
   const [resultados, setResultados] = useState([]);
   const [usuariosAleatorios, setUsuariosAleatorios] = useState([]);
@@ -39,11 +44,60 @@ export default function Usuarios() {
     const saved = localStorage.getItem("search_history_feed");
     return saved ? JSON.parse(saved) : [];
   });
-  const { user: userActual } = useAuth();
+  const { user: userActual, setUser: setUserActual } = useAuth();
+  const { socket } = useSocket();
+  const [isEditing, setIsEditing] = useState(false);
+  const [editingPost, setEditingPost] = useState(null);
   const navigate = useNavigate();
   const location = useLocation();
-  const { showConfirm, showPrompt } = useModal();
+  const { showConfirm } = useModal();
   const { success, error } = useToast();
+
+  useEffect(() => {
+    if (!socket) return;
+
+    socket.on("nuevoPost", (newPost) => {
+      setFeed((prev) => {
+        if (prev.find(p => p._id === newPost._id)) return prev;
+        return [newPost, ...prev];
+      });
+    });
+
+    socket.on("actualizarPost", (updatedPost) => {
+      setFeed((prev) => prev.map((p) => p._id === updatedPost._id ? updatedPost : p));
+    });
+
+    socket.on("eliminarPost", (postId) => {
+      setFeed((prev) => prev.filter((p) => p._id !== postId));
+    });
+
+    socket.on("actualizarComentarios", ({ postId, comentarios }) => {
+      setFeed((prev) => prev.map(p => p._id === postId ? { ...p, comentarios } : p));
+    });
+
+    socket.on("actualizarReacciones", ({ postId, reacciones }) => {
+      setFeed((prev) => prev.map(p => p._id === postId ? { ...p, reacciones } : p));
+    });
+
+    return () => {
+      socket.off("nuevoPost");
+      socket.off("actualizarPost");
+      socket.off("eliminarPost");
+      socket.off("actualizarComentarios");
+      socket.off("actualizarReacciones");
+    };
+  }, [socket]);
+
+  const handleBookmark = async (id) => {
+    try {
+      const res = await bookmarkPost(id);
+
+      setUserActual({ ...userActual, guardados: res.guardados });
+      success(res.msg);
+    } catch (err) {
+      error(t('error_saving') || "Error al guardar");
+    }
+  };
 
   useEffect(() => {
     const fetchSearch = async () => {
@@ -69,7 +123,7 @@ export default function Usuarios() {
     const item = { _id: u._id, nombre: u.nombre, fotoPerfil: u.fotoPerfil, username: u.username };
     setHistorial(prev => {
       const filtered = prev.filter(h => h._id !== u._id);
-      return [item, ...filtered].slice(0, 5); // Keep last 5
+      return [item, ...filtered].slice(0, 5);
     });
     navigate(`/usuarios/${u._id}`);
   };
@@ -162,30 +216,32 @@ export default function Usuarios() {
     }
   };
 
-  const handleEdit = async (id) => {
+  const handleEdit = (id) => {
     const postToEdit = feed.find(p => p._id === id);
-    const nuevoContenido = await showPrompt("Editar publicación", "Ingresa el nuevo contenido:", postToEdit?.contenido || "");
-    if (!nuevoContenido) return;
+    setEditingPost(postToEdit);
+    setIsEditing(true);
+  };
+
+  const onSaveEdit = async (id, contenido) => {
     try {
-      const editado = await editPost(id, { contenido: nuevoContenido });
-      setFeed(feed.map(p => p._id === id ? { ...p, contenido: editado.contenido } : p));
-      success("Publicación editada");
+      const editado = await editPost(id, { contenido });
+      setFeed(feed.map(p => p._id === id ? { ...p, contenido: editado.contenido, mentions: editado.mentions } : p));
+      success(t('post_edited_success'));
     } catch (err) {
-      console.error("Error al editar post", err);
-      error("Error al editar");
+      error(t('error_editing') || "Error al editar");
     }
   };
 
   const handleDelete = async (id) => {
-    const confirmed = await showConfirm("Eliminar publicación", "¿Seguro que quieres eliminar esta publicación?");
+    const confirmed = await showConfirm(t('post_delete_confirm_title'), t('post_delete_confirm_desc'));
     if (!confirmed) return;
     try {
       await deletePost(id);
       setFeed(feed.filter(p => p._id !== id));
-      success("Publicación eliminada");
+      success(t('post_deleted_success'));
     } catch (err) {
       console.error("Error al eliminar post", err);
-      error("Error al eliminar");
+      error(t('error_deleting') || "Error al eliminar");
     }
   };
 
@@ -208,15 +264,15 @@ export default function Usuarios() {
   };
 
   const handleDeleteComment = async (postId, comentarioId) => {
-    const confirmed = await showConfirm("Eliminar comentario", "¿Eliminar comentario?");
+    const confirmed = await showConfirm(t('delete_comment_title'), t('confirm_delete_comment'));
     if (!confirmed) return;
     try {
       const comentarios = await deleteComentario(postId, comentarioId);
       setFeed(feed.map(p => p._id === postId ? { ...p, comentarios } : p));
-      success("Comentario eliminado");
+      success(t('comment_deleted'));
     } catch (err) {
       console.error("Error al eliminar comentario", err);
-      error("Error al eliminar");
+      error(t('delete_error'));
     }
   };
 
@@ -268,7 +324,7 @@ export default function Usuarios() {
 
       <div className="flex items-center gap-2 sm:gap-3 mb-2 sm:mb-8 relative z-10">
         <Users className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-red-600" />
-        <h3 className="text-xs sm:text-lg font-black text-gray-900 tracking-tight">Sugerencias</h3>
+        <h3 className="text-xs sm:text-lg font-black text-gray-900 tracking-tight">{t('suggestions')}</h3>
       </div>
 
       <Slider
@@ -291,7 +347,7 @@ export default function Usuarios() {
               />
               <div>
                 <p className="font-black text-gray-900 text-xs sm:text-lg leading-tight">{u.nombre}</p>
-                <p className="text-[8px] sm:text-[10px] font-bold uppercase tracking-widest text-gray-400">{u.seguidores?.length || 0} Seguidores</p>
+                <p className="text-[8px] sm:text-[10px] font-bold uppercase tracking-widest text-gray-400">{u.seguidores?.length || 0} {t('followers')}</p>
               </div>
 
               {yaLoSigo(u) ? (
@@ -299,14 +355,14 @@ export default function Usuarios() {
                   className="w-full py-2 sm:py-4 bg-red-100 text-red-600 font-black uppercase tracking-widest text-[8px] sm:text-[10px] rounded-lg sm:rounded-xl hover:bg-red-200 transition-all"
                   onClick={() => handleDejarDeSeguir(u._id)}
                 >
-                  Siguiendo
+                  {t('following')}
                 </button>
               ) : (
                 <button
                   className="w-full py-2 sm:py-4 bg-red-600 text-white font-black uppercase tracking-widest text-[8px] sm:text-[10px] rounded-lg sm:rounded-xl shadow-lg shadow-red-200 hover:bg-red-700 hover:scale-[1.02] transition-all"
                   onClick={() => handleSeguir(u._id)}
                 >
-                  Seguir
+                  {t('follow')}
                 </button>
               )}
             </div>
@@ -327,8 +383,8 @@ export default function Usuarios() {
               <Newspaper className="w-3.5 h-3.5 sm:w-6 sm:h-6" />
             </div>
             <div>
-              <h1 className="text-base sm:text-3xl font-black text-gray-900 tracking-tight">🪐 Explora</h1>
-              <p className="text-gray-400 font-bold uppercase text-[7px] sm:text-[10px] tracking-[0.3em]">Conéctate con la galaxia</p>
+              <h1 className="text-base sm:text-3xl font-black text-gray-900 tracking-tight">🪐 {t('explore_title')}</h1>
+              <p className="text-gray-400 font-bold uppercase text-[7px] sm:text-[10px] tracking-[0.3em]">{t('explore_subtitle')}</p>
             </div>
           </div>
 
@@ -338,14 +394,14 @@ export default function Usuarios() {
           <div className="bg-white rounded-2xl sm:rounded-[2.5rem] border border-red-50 p-2 sm:p-8 shadow-xl shadow-red-100/10 mb-3 sm:mb-8">
             <div className="flex items-center gap-2 sm:gap-3 mb-3 sm:mb-6">
               <Search className="w-3.5 h-3.5 sm:w-5 sm:h-5 text-red-600" />
-              <h3 className="text-sm sm:text-lg font-black text-gray-900 tracking-tight">Amigos</h3>
+              <h3 className="text-sm sm:text-lg font-black text-gray-900 tracking-tight">{t('friends')}</h3>
             </div>
 
             <div className="relative group mb-3 sm:mb-6">
               <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3 h-3 sm:w-4 sm:h-4 text-gray-400 transition-colors group-focus-within:text-red-500" />
               <input
                 type="text"
-                placeholder="Buscar..."
+                placeholder={`${t('search')}...`}
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="w-full pl-8 sm:pl-12 pr-4 sm:pr-6 py-2 sm:py-4 bg-gray-50/50 border-transparent rounded-xl sm:rounded-2xl text-[10px] sm:text-sm focus:bg-white focus:ring-4 focus:ring-red-50 transition-all outline-none italic"
@@ -360,10 +416,10 @@ export default function Usuarios() {
               <div className="space-y-2 max-h-[400px] overflow-y-auto pr-2 scrollbar-hide">
                 <div className="flex items-center justify-between mb-2">
                   <p className="text-[9px] font-black text-gray-400 uppercase tracking-widest">
-                    {search.trim() ? "Resultados de búsqueda" : "Búsquedas recientes"}
+                    {search.trim() ? t('search_results') : t('recent')}
                   </p>
                   {!search.trim() && historial.length > 0 && (
-                    <button onClick={() => setHistorial([])} className="text-[9px] font-black text-red-600 uppercase tracking-widest hover:underline">Limpiar todo</button>
+                    <button onClick={() => setHistorial([])} className="text-[9px] font-black text-red-600 uppercase tracking-widest hover:underline">{t('clear_all')}</button>
                   )}
                 </div>
                 {(search.trim() ? resultados : historial).map((usuario) => (
@@ -400,7 +456,7 @@ export default function Usuarios() {
             {feed.length === 0 ? (
               <div className="bg-white rounded-[2rem] sm:rounded-[3rem] p-10 sm:p-20 text-center border-2 border-dashed border-red-100 opacity-50">
                 <Users className="w-12 h-12 sm:w-16 sm:h-16 text-red-200 mx-auto mb-4" />
-                <p className="text-gray-400 font-black text-sm sm:text-base">Tu feed está vacío. ¡Sigue a alguien!</p>
+                <p className="text-gray-400 font-black text-sm sm:text-base">{t('empty_feed')}</p>
               </div>
             ) : (
               feed.map((post, index) => (
@@ -414,10 +470,11 @@ export default function Usuarios() {
                     onEdit={handleEdit}
                     onDelete={handleDelete}
                     onShare={handleShare}
+                    onBookmark={handleBookmark}
                     onDeleteComment={handleDeleteComment}
                     onEditComment={handleEditComment}
                   />
-                  {/* Inject Suggestions Slider every 5 posts, but only visible on mobile */}
+
                   {(index + 1) % 5 === 0 && (
                     <div className="lg:hidden">
                       <SuggestionsSlider />
@@ -429,13 +486,22 @@ export default function Usuarios() {
           </div>
         </div>
 
-        {/* Right Column: Search & Suggestions */}
+
         <div className="space-y-10">
 
 
           <SuggestionsSlider />
         </div>
       </div>
+
+      {isEditing && (
+        <EditPostModal 
+          isOpen={isEditing} 
+          post={editingPost} 
+          onClose={() => setIsEditing(false)} 
+          onSave={onSaveEdit} 
+        />
+      )}
     </div>
   );
 }

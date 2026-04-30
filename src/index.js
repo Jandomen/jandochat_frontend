@@ -4,14 +4,17 @@ import App from "./App";
 import "./index.css";
 import { AuthProvider } from "./context/AuthContext";
 import { ModalProvider } from "./context/ModalContext";
+import { LanguageProvider } from "./context/LanguageContext";
 
 const root = ReactDOM.createRoot(document.getElementById("root"));
 root.render(
   <React.StrictMode>
     <AuthProvider>
-      <ModalProvider>
-        <App />
-      </ModalProvider>
+      <LanguageProvider>
+        <ModalProvider>
+          <App />
+        </ModalProvider>
+      </LanguageProvider>
     </AuthProvider>
   </React.StrictMode>
 );

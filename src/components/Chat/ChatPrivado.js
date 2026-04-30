@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useRef } from "react";
 import { WifiOff } from "lucide-react";
 import useSocket from "../../hooks/useSocket";
+import { useLanguage } from "../../context/LanguageContext";
 import useAuth from "../../hooks/useAuth";
 import { useModal } from "../../context/ModalContext";
 import { useToast } from "../../context/ToastContext";
@@ -13,7 +14,7 @@ import {
 import { uploadMedia } from "../../api/posts";
 import { useParams, useLocation, Link } from "react-router-dom";
 import api from "../../api/axios";
-import { Send, Edit2, Trash2, ChevronLeft, Paperclip, X, Phone, Video, Loader2, FileText } from "lucide-react";
+import { Send, Edit2, Trash2, ChevronLeft, Paperclip, X, Phone, Video, Loader2, FileText, Mic, StopCircle, Download } from "lucide-react";
 import { useCall } from "../../context/CallContext";
 import MediaPickerModal from "../UI/MediaPickerModal";
 
@@ -28,6 +29,7 @@ function escapeHTML(str) {
 }
 
 function ChatPrivado({ conversacionId: propConversacionId, destinatario: propDestinatario }) {
+  const { t } = useLanguage();
   const { user: usuario } = useAuth();
   const [mensajes, setMensajes] = useState([]);
   const [mensaje, setMensaje] = useState("");
@@ -35,6 +37,10 @@ function ChatPrivado({ conversacionId: propConversacionId, destinatario: propDes
   const [destinatario, setDestinatario] = useState(propDestinatario || null);
   const [loading, setLoading] = useState(false);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
+  const [isRecording, setIsRecording] = useState(false);
+  const [audioBlob, setAudioBlob] = useState(null);
+  const mediaRecorderRef = useRef(null);
+  const audioChunksRef = useRef([]);
 
   const {
     startCall,
@@ -90,11 +96,11 @@ function ChatPrivado({ conversacionId: propConversacionId, destinatario: propDes
         const data = await obtenerMensajes(conversacionId);
         setMensajes(data || []);
       } catch (error) {
-        showErrorToast("Error al cargar mensajes.");
+        showErrorToast(t('load_messages_error'));
       }
     };
     cargarMensajes();
-  }, [conversacionId, showErrorToast]);
+  }, [conversacionId, showErrorToast, t]);
 
   useEffect(() => {
     if (!usuario) return;
@@ -110,11 +116,11 @@ function ChatPrivado({ conversacionId: propConversacionId, destinatario: propDes
           setDestinatario(otro);
         }
       } catch (error) {
-        showErrorToast("Error al cargar destinatario.");
+        showErrorToast(t('load_recipient_error'));
       }
     };
     cargarDestinatario();
-  }, [conversacionId, propDestinatario, locationDestinatario, destinatario, usuario, showErrorToast]);
+  }, [conversacionId, propDestinatario, locationDestinatario, destinatario, usuario, showErrorToast, t]);
 
   useEffect(() => {
     if (navigator.onLine && offlineQueue.length > 0 && usuario) {
@@ -143,6 +149,31 @@ function ChatPrivado({ conversacionId: propConversacionId, destinatario: propDes
     localStorage.setItem(`offline_msgs_${conversacionId}`, JSON.stringify(offlineQueue));
   }, [offlineQueue, conversacionId]);
 
+  const handleStartRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      mediaRecorderRef.current = new MediaRecorder(stream);
+      audioChunksRef.current = [];
+      mediaRecorderRef.current.ondataavailable = (e) => audioChunksRef.current.push(e.data);
+      mediaRecorderRef.current.onstop = () => {
+        const blob = new Blob(audioChunksRef.current, { type: "audio/webm" });
+        setAudioBlob(blob);
+        stream.getTracks().forEach(t => t.stop());
+      };
+      mediaRecorderRef.current.start();
+      setIsRecording(true);
+    } catch (err) {
+      showErrorToast(t('mic_access_error'));
+    }
+  };
+
+  const handleStopRecording = () => {
+    if (mediaRecorderRef.current && isRecording) {
+      mediaRecorderRef.current.stop();
+      setIsRecording(false);
+    }
+  };
+
   const handleFileChange = (e) => {
     const files = Array.from(e.target.files);
     const MAX_SIZE = 25 * 1024 * 1024;
@@ -152,7 +183,8 @@ function ChatPrivado({ conversacionId: propConversacionId, destinatario: propDes
       let tipo = "archivo";
       if (file.type.startsWith("image/")) tipo = "imagen";
       else if (file.type.startsWith("video/")) tipo = "video";
-      else if (file.type === "application/pdf") tipo = "pdf";
+      else if (file.type.startsWith("audio/")) tipo = "audio";
+      else tipo = "documento";
       validFiles.push({
         url: URL.createObjectURL(file),
         tipo,
@@ -172,70 +204,85 @@ function ChatPrivado({ conversacionId: propConversacionId, destinatario: propDes
 
   const enviarMensaje = async (e) => {
     e.preventDefault();
-    if ((!mensaje.trim() && media.length === 0) || !destinatario || loading || !usuario) return;
+    if ((!mensaje.trim() && media.length === 0 && !audioBlob) || !destinatario || loading || !usuario) return;
 
     setLoading(true);
-    const msgData = {
-      contenido: mensaje,
-      conversacion: conversacionId,
-      emisor: usuario._id,
-      media: media.map(m => ({ url: m.url, tipo: m.tipo })),
-      tempId: Date.now()
-    };
+
+    // Use FormData for multimedia uploads
+    const formData = new FormData();
+    formData.append("conversacion", conversacionId);
+    formData.append("emisor", usuario._id);
+    if (mensaje.trim()) formData.append("contenido", mensaje);
+
+    media.forEach(m => {
+      if (m.file) formData.append("media", m.file);
+    });
+
+    if (audioBlob) {
+      formData.append("media", audioBlob, `voice_note_${Date.now()}.webm`);
+    }
 
     if (!navigator.onLine) {
-      msgData.localFiles = media.map(m => m.file).filter(Boolean);
-      setOfflineQueue([...offlineQueue, msgData]);
-      setMensaje("");
-      setMedia([]);
+      // Offline mode currently doesn't support FormData persistence easily in this implementation
+      showErrorToast(t('offline_multimedia_error'));
       setLoading(false);
       return;
     }
 
     try {
-      let finalMedia = [...msgData.media];
-      const filesToUpload = media.map(m => m.file).filter(Boolean);
-      if (filesToUpload.length > 0) {
-        const uploaded = await uploadMedia(filesToUpload);
-        finalMedia = uploaded.map(u => ({ url: u.url, tipo: u.tipo }));
-      }
-      await enviarMensajeAPI({ ...msgData, media: finalMedia });
+      await enviarMensajeAPI(formData);
       setMensaje("");
       setMedia([]);
+      setAudioBlob(null);
     } catch (error) {
       console.error("Error al enviar mensaje:", error);
-      msgData.localFiles = media.map(m => m.file).filter(Boolean);
-      setOfflineQueue([...offlineQueue, msgData]);
-      setMensaje("");
-      setMedia([]);
+      showErrorToast(t('send_message_error'));
     } finally {
       setLoading(false);
     }
   };
 
+  const descargarArchivo = async (url, nombre) => {
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = blobUrl;
+      a.download = nombre || t('document_label');
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      window.URL.revokeObjectURL(blobUrl);
+    } catch (err) {
+
+      window.open(url, "_blank");
+    }
+  };
+
   const editarMensaje = async (mensajeOriginal) => {
-    const nuevoContenido = await showPrompt("Editar mensaje", "Ingresa el nuevo contenido:", mensajeOriginal.contenido);
+    const nuevoContenido = await showPrompt(t('edit_message_title'), t('enter_new_content'), mensajeOriginal.contenido);
     if (!nuevoContenido || nuevoContenido === mensajeOriginal.contenido) return;
     try {
       const actualizado = await editarMensajeAPI(mensajeOriginal._id, { contenido: nuevoContenido });
       setMensajes((prev) => prev.map((m) => (m._id === actualizado._id ? actualizado : m)));
       socket.emit("mensaje-editado", actualizado);
-    } catch (error) { showErrorToast("Error al editar."); }
+    } catch (error) { showErrorToast(t('error')); }
   };
 
   const eliminarMensaje = async (mensajeId) => {
-    const confirmed = await showConfirm("Eliminar mensaje", "¿Eliminar este mensaje?");
+    const confirmed = await showConfirm(t('delete_message_title'), t('confirm_delete_message'));
     if (!confirmed) return;
     try {
       await eliminarMensajeAPI(mensajeId);
       setMensajes((prev) => prev.filter((m) => m._id !== mensajeId));
       socket.emit("mensaje-eliminado", mensajeId);
-    } catch (err) { showErrorToast("Error al eliminar"); }
+    } catch (err) { showErrorToast(t('error')); }
   };
 
   const handlePickerSelect = (type) => {
     if (!fileInputRef.current) return;
-    
+
     if (type === 'camera') {
       fileInputRef.current.setAttribute('capture', 'environment');
       fileInputRef.current.accept = "image/*,video/*";
@@ -244,9 +291,9 @@ function ChatPrivado({ conversacionId: propConversacionId, destinatario: propDes
       fileInputRef.current.accept = "image/*,video/*";
     } else if (type === 'files') {
       fileInputRef.current.removeAttribute('capture');
-      fileInputRef.current.accept = "application/pdf";
+      fileInputRef.current.accept = "*/*";
     }
-    
+
     setTimeout(() => {
       fileInputRef.current.click();
     }, 100);
@@ -254,10 +301,10 @@ function ChatPrivado({ conversacionId: propConversacionId, destinatario: propDes
 
   return (
     <div className="flex flex-col h-full bg-slate-50 relative overflow-hidden flex-1 shadow-inner">
-      <MediaPickerModal 
-        isOpen={isPickerOpen} 
-        onClose={() => setIsPickerOpen(false)} 
-        onSelect={handlePickerSelect} 
+      <MediaPickerModal
+        isOpen={isPickerOpen}
+        onClose={() => setIsPickerOpen(false)}
+        onSelect={handlePickerSelect}
       />
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://www.transparenttextures.com/patterns/cubes.png')]"></div>
 
@@ -281,7 +328,7 @@ function ChatPrivado({ conversacionId: propConversacionId, destinatario: propDes
                 <span className="font-black text-gray-900 leading-tight group-hover:text-red-700 transition-colors text-[10px] sm:text-sm truncate">
                   {destinatario.nombre}
                 </span>
-                <span className="text-[7px] text-green-600 font-bold uppercase tracking-widest leading-none">Activo</span>
+                <span className="text-[7px] text-green-600 font-bold uppercase tracking-widest leading-none">{t('active_status')}</span>
               </div>
             </Link>
           )}
@@ -325,13 +372,31 @@ function ChatPrivado({ conversacionId: propConversacionId, destinatario: propDes
                       {m.media.map((med, idx) => (
                         <div key={idx} className="rounded-xl overflow-hidden shadow-sm border border-gray-100">
                           {med.tipo === 'imagen' ? (
-                            <img src={med.url} alt="" className="w-full max-h-48 object-cover" />
+                            <img src={med.url} alt="" className="w-full max-h-48 object-cover cursor-pointer hover:opacity-90 transition-opacity" onClick={() => window.open(med.url, '_blank')} />
                           ) : med.tipo === 'video' ? (
                             <video src={med.url} controls className="w-full max-h-48 bg-black" />
-                          ) : (
-                            <div className="p-2 flex items-center gap-2 bg-gray-50/10 text-[9px] font-black uppercase tracking-tighter">
-                              <FileText className="w-3.5 h-3.5" /> {med.name || 'Archivo'}
+                          ) : med.tipo === 'audio' ? (
+                            <div className="bg-red-50/20 p-2 rounded-xl flex items-center gap-2">
+                              <Mic className="w-4 h-4 text-white fill-white animate-pulse" />
+                              <audio src={med.url} controls className="h-8 max-w-full invert opacity-80" />
                             </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => descargarArchivo(med.url, med.nombre)}
+                              className={`flex items-center justify-between gap-3 p-3 rounded-xl transition-all border border-white/10 text-left outline-none ${esAutor ? "bg-white/10 hover:bg-white/20 text-white" : "bg-gray-50 hover:bg-red-50 text-gray-800"}`}
+                            >
+                               <div className="flex items-center gap-3 min-w-0">
+                                 <div className="bg-red-600 p-2 rounded-lg text-white shadow-sm flex-shrink-0">
+                                   <FileText className="w-4 h-4" />
+                                 </div>
+                                 <div className="flex flex-col min-w-0">
+                                   <span className="text-[10px] font-black uppercase tracking-tight truncate max-w-[150px]">{med.nombre || t('document_label')}</span>
+                                   <span className="text-[7px] opacity-60 uppercase font-black">{t('download_file_label')}</span>
+                                 </div>
+                               </div>
+                               <Download className="w-3.5 h-3.5 opacity-50 flex-shrink-0" />
+                            </button>
                           )}
                         </div>
                       ))}
@@ -341,10 +406,10 @@ function ChatPrivado({ conversacionId: propConversacionId, destinatario: propDes
 
                   <div className={`flex items-center gap-1.5 mt-1 opacity-60 text-[8px] sm:text-[9px] font-black uppercase tracking-widest ${esAutor ? "justify-end text-white/70" : "justify-start text-gray-400"}`}>
                     {isPending ? (
-                      <span className="flex items-center gap-1"><WifiOff className="w-2.5 h-2.5" /> Pendiente</span>
+                      <span className="flex items-center gap-1"><WifiOff className="w-2.5 h-2.5" /> {t('pending_label')}</span>
                     ) : (
                       <>
-                        {m.updatedAt && m.updatedAt !== m.createdAt && <span>• Editado</span>}
+                        {m.updatedAt && m.updatedAt !== m.createdAt && <span>• {t('edited_label')}</span>}
                         <span>{new Date(m.createdAt || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                       </>
                     )}
@@ -370,38 +435,56 @@ function ChatPrivado({ conversacionId: propConversacionId, destinatario: propDes
 
       {/* Input de Chat Fijo al Fondo */}
       <div className="p-2 sm:p-6 bg-white border-t border-red-50 z-20 mt-auto">
-        {media.length > 0 && (
-          <div className="max-w-5xl mx-auto flex gap-3 mb-2 overflow-x-auto pb-1">
+        {(media.length > 0 || audioBlob) && (
+          <div className="max-w-5xl mx-auto flex flex-wrap gap-3 mb-2 overflow-x-auto pb-1 bg-white p-2 rounded-xl border border-red-50 shadow-sm animate-in slide-in-from-bottom-2">
             {media.map((item, index) => (
-              <div key={index} className="relative flex-shrink-0">
-                <img src={item.tipo === 'imagen' ? item.url : "https://via.placeholder.com/64?text=Video"} alt="" className="w-12 h-12 object-cover rounded-lg border shadow-sm" />
-                <button onClick={() => removeMedia(index)} className="absolute -top-1 -right-1 p-0.5 bg-red-600 text-white rounded-full">
+              <div key={index} className="relative flex-shrink-0 group">
+                <img src={item.tipo === 'imagen' ? item.url : "https://via.placeholder.com/64?text=Archivo"} alt="" className="w-12 h-12 object-cover rounded-lg border shadow-sm" />
+                <button type="button" onClick={() => removeMedia(index)} className="absolute -top-1 -right-1 p-0.5 bg-red-600 text-white rounded-full shadow-lg">
                   <X className="w-2.5 h-2.5" />
                 </button>
               </div>
             ))}
+            {audioBlob && (
+              <div className="flex items-center gap-2 bg-red-600 text-white px-3 py-2 rounded-xl shadow-lg ring-2 ring-red-100 animate-pulse">
+                <Mic className="w-4 h-4" />
+                <span className="text-[10px] font-black uppercase tracking-widest">{t('audio_recorded_label')}</span>
+                <button type="button" onClick={() => setAudioBlob(null)} className="ml-2 hover:scale-110 transition-transform"><Trash2 className="w-3.5 h-3.5" /></button>
+              </div>
+            )}
           </div>
         )}
         <form onSubmit={enviarMensaje} className="max-w-5xl mx-auto flex items-center gap-2">
-          <input type="file" ref={fileInputRef} onChange={handleFileChange} multiple accept="image/*,video/*,application/pdf" className="hidden" />
-          <button type="button" onClick={() => setIsPickerOpen(true)} className="p-2 bg-gray-50 text-gray-400 hover:text-red-600 rounded-full transition-all flex-shrink-0">
-            <Paperclip className="w-5 h-5" />
-          </button>
+          <input type="file" ref={fileInputRef} onChange={handleFileChange} multiple accept="*/*" className="hidden" />
+          <div className="flex items-center gap-1">
+            <button type="button" onClick={() => setIsPickerOpen(true)} className="p-2.5 bg-gray-50 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-full transition-all flex-shrink-0 active:scale-90" title={t('attach_multimedia_title')}>
+              <Paperclip className="w-5 h-5" />
+            </button>
+            <button
+              type="button"
+              onClick={isRecording ? handleStopRecording : handleStartRecording}
+              className={`p-2.5 rounded-full transition-all active:scale-90 ${isRecording ? 'bg-red-600 text-white animate-pulse shadow-lg ring-4 ring-red-100' : 'bg-gray-50 text-gray-400 hover:text-red-600 hover:bg-red-50'}`}
+              title={isRecording ? t('stop_recording_title') : t('record_voice_note_title')}
+            >
+              {isRecording ? <StopCircle className="w-5 h-5" /> : <Mic className="w-5 h-5" />}
+            </button>
+          </div>
           <div className="flex-1 relative bg-gray-100/50 rounded-2xl border border-transparent focus-within:border-red-100 focus-within:bg-white transition-all shadow-inner overflow-hidden">
             <input
               type="text"
               value={mensaje}
               onChange={(e) => setMensaje(e.target.value)}
-              placeholder="Mensaje..."
+              placeholder={isRecording ? t('recording_audio_placeholder') : t('message_placeholder')}
+              disabled={isRecording}
               className="w-full px-4 py-2 bg-transparent text-gray-800 text-[13px] font-medium outline-none"
             />
           </div>
           <button
             type="submit"
-            disabled={!destinatario || loading || (!mensaje.trim() && media.length === 0)}
-            className="p-2.5 bg-gradient-to-br from-red-600 to-red-700 text-white rounded-full shadow-lg shadow-red-100 active:scale-95 transition-all flex-shrink-0"
+            disabled={!destinatario || loading || (!mensaje.trim() && media.length === 0 && !audioBlob) || isRecording}
+            className="p-3 bg-gradient-to-br from-red-600 to-red-700 text-white rounded-full shadow-lg shadow-red-100 active:scale-95 transition-all flex-shrink-0 group hover:rotate-12"
           >
-            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+            {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5 group-hover:translate-x-0.5 group-hover:-translate-y-0.5 transition-transform" />}
           </button>
         </form>
       </div>

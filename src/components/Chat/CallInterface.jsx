@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import { PhoneOff, Mic, MicOff, Video, VideoOff, User } from "lucide-react";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function CallInterface({
   localStream,
@@ -14,6 +15,7 @@ export default function CallInterface({
   callerName,
   error
 }) {
+  const { t } = useLanguage();
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
   const remoteAudioRef = useRef(null);
@@ -64,12 +66,12 @@ export default function CallInterface({
   }, [remoteStream, callType]);
 
   const statusText = {
-    calling: "Llamando...",
-    connecting: "Estableciendo conexión...",
-    connected: "Llamada activa",
-    incoming: "Llamada entrante...",
-    busy: "Usuario ocupado",
-    rejected: "Llamada rechazada"
+    calling: t('call_status_calling'),
+    connecting: t('call_status_connecting'),
+    connected: t('call_status_connected'),
+    incoming: t('call_status_incoming'),
+    busy: t('call_status_busy'),
+    rejected: t('call_status_rejected')
   };
 
   const isVideo = callType === "video";
@@ -104,7 +106,7 @@ export default function CallInterface({
           </div>
 
           <div className="mt-8 text-center space-y-2">
-            <h2 className="text-3xl font-black text-white tracking-tighter uppercase">{callerName || "Llamada de Voz"}</h2>
+            <h2 className="text-3xl font-black text-white tracking-tighter uppercase">{callerName || t('voice_call_label')}</h2>
             <div className="flex items-center justify-center gap-2 text-green-400 font-bold tracking-widest text-xs">
               <span className="w-2 h-2 bg-green-500 rounded-full animate-bounce"></span>
               {callStatus === "connected" ? formatTime(timer) : statusText[callStatus]}
@@ -131,14 +133,14 @@ export default function CallInterface({
             muted
             className="w-32 h-44 sm:w-40 sm:h-56 rounded-3xl object-cover border-2 border-white/20 shadow-2xl bg-slate-900 -scale-x-100 transition-transform group-hover:scale-105"
           />
-          <div className="absolute top-2 right-2 bg-black/50 px-2 py-1 rounded-lg text-[8px] font-bold text-white uppercase tracking-widest">Tú</div>
+          <div className="absolute top-2 right-2 bg-black/50 px-2 py-1 rounded-lg text-[8px] font-bold text-white uppercase tracking-widest">{t('you_label_call')}</div>
         </div>
       )}
 
       {/* Indicador de estado (solo no conectados y no video) */}
       {callStatus !== "connected" && isVideo && (
         <div className="absolute top-24 left-1/2 -translate-x-1/2 bg-black/60 backdrop-blur-xl px-8 py-3 rounded-2xl border border-white/10 text-white font-black uppercase text-[10px] tracking-[0.3em] shadow-2xl">
-          {statusText[callStatus] || "Conectando..."}
+          {statusText[callStatus] || t('call_status_connecting')}
         </div>
       )}
 
@@ -181,13 +183,13 @@ export default function CallInterface({
             <div className="w-16 h-16 bg-red-500/20 text-red-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
               <PhoneOff size={32} />
             </div>
-            <h3 className="text-xl font-black text-white uppercase tracking-tighter">Llamada Finalizada</h3>
+            <h3 className="text-xl font-black text-white uppercase tracking-tighter">{t('call_ended_title')}</h3>
             <p className="text-gray-400 text-xs font-bold uppercase tracking-widest leading-loose">{error}</p>
             <button
               onClick={onEndCall}
               className="w-full py-4 bg-red-600 text-white font-black rounded-2xl hover:bg-red-700 transition-all uppercase tracking-widest text-[10px]"
             >
-              Cerrar
+              {t('close_btn')}
             </button>
           </div>
         </div>

@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { PhoneOff, Video, Phone, User } from "lucide-react";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function IncomingCallModal({ call, onAccept, onReject }) {
+  const { t } = useLanguage();
   const [isVisible, setIsVisible] = useState(false);
 
   useEffect(() => {
@@ -68,7 +70,7 @@ export default function IncomingCallModal({ call, onAccept, onReject }) {
           fontWeight: "bold",
           marginBottom: 8
         }}>
-          {isVideo ? "Videollamada" : "Llamada de voz"}
+          {isVideo ? t('video_call_label') : t('voice_call_label_short')}
         </h2>
 
         <p style={{
@@ -76,7 +78,7 @@ export default function IncomingCallModal({ call, onAccept, onReject }) {
           fontSize: 16,
           marginBottom: 32
         }}>
-          {caller?.nombre || "Usuario"} está llamándote
+          {caller?.nombre || t('user_fallback')} {t('is_calling_you')}
         </p>
 
         <div style={{ display: "flex", gap: 24, justifyContent: "center" }}>

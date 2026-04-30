@@ -1,9 +1,10 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { buscarConversacionPrivada, crearConversacion } from "../../api/conversation";
 import { userSearch } from "../../api/user";
 import { useToast } from "../../context/ToastContext";
 import { Search, UserPlus2, ArrowLeft, X as CloseIcon, History } from "lucide-react";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function BuscarUsuarios({ onBack }) {
   const [query, setQuery] = useState("");
@@ -11,9 +12,16 @@ export default function BuscarUsuarios({ onBack }) {
   const [cargando, setCargando] = useState(false);
   const [historial, setHistorial] = useState([]);
   const navigate = useNavigate();
+  const location = useLocation();
   const { error } = useToast();
+  const { t } = useLanguage();
 
-  // Load history on mount
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const q = params.get("q");
+    if (q) setQuery(q);
+  }, [location.search]);
+
   useEffect(() => {
     const saved = localStorage.getItem("search_history");
     if (saved) {
@@ -89,8 +97,8 @@ export default function BuscarUsuarios({ onBack }) {
             <ArrowLeft className="w-4 h-4" />
           </button>
           <div>
-            <h3 className="text-base font-black text-gray-900 tracking-tight">Explorar</h3>
-            <p className="text-[8px] font-black text-red-600 uppercase tracking-widest">Encuentra nuevas estrellas</p>
+            <h3 className="text-base font-black text-gray-900 tracking-tight">{t('explore_title')}</h3>
+            <p className="text-[8px] font-black text-red-600 uppercase tracking-widest">{t('explore_subtitle')}</p>
           </div>
         </div>
 
@@ -100,7 +108,7 @@ export default function BuscarUsuarios({ onBack }) {
           </div>
           <input
             type="text"
-            placeholder="Buscar..."
+            placeholder={`${t('search')}...`}
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             className="block w-full pl-11 pr-10 py-3 bg-gray-50/50 border-transparent rounded-2xl text-[11px] focus:bg-white focus:ring-4 focus:ring-red-50 transition-all outline-none font-medium shadow-inner"
@@ -121,13 +129,13 @@ export default function BuscarUsuarios({ onBack }) {
         {cargando ? (
           <div className="flex flex-col items-center justify-center py-20 animate-pulse">
             <div className="w-12 h-12 bg-red-50 rounded-full mb-4"></div>
-            <p className="text-[10px] font-black text-red-200 uppercase tracking-widest">Calculando trayectorias...</p>
+            <p className="text-[10px] font-black text-red-200 uppercase tracking-widest">{t('calculating_trajectories')}</p>
           </div>
         ) : query ? (
           <div className="space-y-4">
             {resultados.length > 0 ? (
               <>
-                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.25em] mb-6">Resultados encontrados</p>
+                <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.25em] mb-6">{t('search_results')}</p>
                 {resultados.map((usuario) => (
                   <div
                     key={usuario._id}
@@ -157,7 +165,7 @@ export default function BuscarUsuarios({ onBack }) {
                 <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
                   <Search className="w-8 h-8 text-gray-200" />
                 </div>
-                <p className="text-gray-400 font-black uppercase tracking-widest text-xs">No hay nada en este sector</p>
+                <p className="text-gray-400 font-black uppercase tracking-widest text-xs">{t('empty_sector')}</p>
               </div>
             )}
           </div>
@@ -168,13 +176,13 @@ export default function BuscarUsuarios({ onBack }) {
                 <div className="flex items-center justify-between mb-2">
                   <div className="flex items-center gap-2">
                     <History className="w-3 h-3 text-red-600" />
-                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.25em]">Búsquedas Recientes</p>
+                    <p className="text-[10px] font-black text-gray-400 uppercase tracking-[0.25em]">{t('recent_searches')}</p>
                   </div>
                   <button
                     onClick={() => { setHistorial([]); localStorage.removeItem("search_history"); }}
                     className="text-[10px] font-black text-red-600 uppercase tracking-widest hover:underline"
                   >
-                    Borrar todo
+                    {t('clear_all')}
                   </button>
                 </div>
                 <div className="space-y-2">
@@ -208,8 +216,8 @@ export default function BuscarUsuarios({ onBack }) {
             <div className="p-6 bg-gradient-to-br from-red-600 to-red-700 rounded-[2.5rem] text-white overflow-hidden relative shadow-lg shadow-red-100">
               <div className="absolute -top-10 -right-10 w-32 h-32 bg-white/10 rounded-full blur-2xl"></div>
               <div className="relative z-10">
-                <h4 className="text-sm font-black mb-1 tracking-tight uppercase">Crea nuevas conexiones</h4>
-                <p className="text-red-100 text-[10px] font-bold leading-tight opacity-80">Busca a tus amigos por su nombre o @usuario único.</p>
+                <h4 className="text-sm font-black mb-1 tracking-tight uppercase">{t('create_connections_title')}</h4>
+                <p className="text-red-100 text-[10px] font-bold leading-tight opacity-80">{t('create_connections_desc')}</p>
               </div>
             </div>
           </div>

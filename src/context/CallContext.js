@@ -29,10 +29,8 @@ export const CallProvider = ({ children }) => {
     const [remoteStream, setRemoteStream] = useState(null);
 
     const peerConnectionRef = useRef(null);
-    // const initialized = useRef(false); // Removed as useEffect dependencies handle re-runs
 
     const cleanupCall = useCallback(() => {
-        console.log("📞 [CallContext] Limpiando llamada...");
 
         if (peerConnectionRef.current) {
             console.log("📞 [CallContext] Cerrando PeerConnection");
@@ -40,7 +38,6 @@ export const CallProvider = ({ children }) => {
             peerConnectionRef.current = null;
         }
 
-        // Nota: El localStream lo manejamos con el estado ahora
         setLocalStream(prev => {
             if (prev) {
                 prev.getTracks().forEach(track => {
@@ -129,14 +126,11 @@ export const CallProvider = ({ children }) => {
     useEffect(() => {
         if (!user?._id) return;
 
-        console.log(`📞 [CallContext] Inicializando socket para usuario: ${user._id}`);
         ringtonePlayer.loadSavedRingtone();
         callSocket.connect(user._id);
 
         const onIncoming = (call) => {
             console.log("📞 [CallContext] Evento RECIBIDO: call:incoming", call);
-            // Usamos una referencia o el estado actual para verificar si ya hay una llamada
-            // Como estamos dentro del efecto, usaremos setActiveCall con callback para mayor seguridad
             setActiveCall(prev => {
                 if (prev) {
                     console.log("📞 [CallContext] Ya hay una llamada activa. Rechazando entrante (Busy)");
@@ -229,7 +223,6 @@ export const CallProvider = ({ children }) => {
         callSocket.on("webrtc:ice-candidate", onIceCandidate);
 
         return () => {
-            console.log("📞 [CallContext] Limpiando listeners de socket");
             callSocket.off("call:incoming", onIncoming);
             callSocket.off("call:busy", onBusy);
             callSocket.off("call:accept", onAccept);

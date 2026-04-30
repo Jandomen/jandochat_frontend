@@ -3,6 +3,7 @@ import { X, Type, Smile, Upload, Play, Send, Image, Film } from "lucide-react";
 import { uploadMedia } from "../../api/posts";
 import { crearStory } from "../../api/stories";
 import { useToast } from "../../context/ToastContext";
+import { useLanguage } from "../../context/LanguageContext";
 
 const MAX_DURATION = 30;
 
@@ -10,6 +11,7 @@ const EMOJI_LIST = ["😀", "😂", "🥰", "😎", "🤩", "🔥", "❤️", "�
 
 export default function StoryEditor({ onClose, onPublished }) {
     const { success, error: showError } = useToast();
+    const { t } = useLanguage();
     const [file, setFile] = useState(null);
     const [previewUrl, setPreviewUrl] = useState(null);
     const [mediaType, setMediaType] = useState(null); // "imagen" | "video"
@@ -38,7 +40,7 @@ export default function StoryEditor({ onClose, onPublished }) {
         const isImage = selected.type.startsWith("image/");
 
         if (!isVideo && !isImage) {
-            showError("Solo se permiten imágenes y videos");
+            showError(t('only_images_error'));
             return;
         }
 
@@ -133,11 +135,11 @@ export default function StoryEditor({ onClose, onPublished }) {
             };
 
             await crearStory(storyData);
-            success("¡Historia publicada! 🎉");
+            success(t('story_published'));
             onPublished();
         } catch (err) {
             console.error("Error publishing story:", err);
-            showError("Error al publicar historia");
+            showError(t('story_publish_error'));
         } finally {
             setUploading(false);
         }
@@ -152,7 +154,7 @@ export default function StoryEditor({ onClose, onPublished }) {
                 {/* Header */}
                 <div className="flex items-center justify-between p-3 sm:p-4 bg-black/50 backdrop-blur-sm z-20">
                     <h3 className="text-white font-black text-[10px] sm:text-sm uppercase tracking-widest">
-                        {file ? "Editar" : "Nueva Historia"}
+                        {file ? t('edit') : t('new_story')}
                     </h3>
                     <button onClick={onClose} className="p-1.5 text-white/60 hover:text-white hover:bg-white/10 rounded-full transition-all">
                         <X className="w-4 h-4" />
@@ -175,21 +177,21 @@ export default function StoryEditor({ onClose, onPublished }) {
                                 <Upload className="w-10 h-10 text-red-500" />
                             </div>
                             <div>
-                                <p className="text-white font-black text-lg mb-2">Sube tu historia</p>
-                                <p className="text-gray-400 text-sm">Imagen o video (máx 30s)</p>
+                                <p className="text-white font-black text-lg mb-2">{t('upload_story_title')}</p>
+                                <p className="text-gray-400 text-sm">{t('upload_story_subtitle')}</p>
                             </div>
                             <div className="flex gap-3">
                                 <button
                                     onClick={() => fileInputRef.current?.click()}
                                     className="flex items-center gap-2 px-6 py-3 bg-red-600 text-white rounded-2xl font-bold text-sm hover:bg-red-700 transition-all"
                                 >
-                                    <Image className="w-4 h-4" /> Imagen
+                                    <Image className="w-4 h-4" /> {t('image_label')}
                                 </button>
                                 <button
                                     onClick={() => fileInputRef.current?.click()}
                                     className="flex items-center gap-2 px-6 py-3 bg-white/10 text-white rounded-2xl font-bold text-sm hover:bg-white/20 transition-all"
                                 >
-                                    <Film className="w-4 h-4" /> Video
+                                    <Film className="w-4 h-4" /> {t('video_label')}
                                 </button>
                             </div>
                         </div>
@@ -261,12 +263,12 @@ export default function StoryEditor({ onClose, onPublished }) {
                         <div className="flex items-center justify-between text-[11px] font-black uppercase tracking-[0.2em] text-gray-400">
                             <span className="flex items-center gap-2">
                                 <Film className="w-4 h-4 text-red-500" />
-                                Ajustar Tiempo
+                                {t('adjust_time')}
                             </span>
                             <div className="flex bg-black/50 px-3 py-1.5 rounded-full border border-white/5 items-center gap-2">
                                 <span className="text-red-400">{(trimEnd - trimStart).toFixed(1)}s</span>
                                 <span className="text-gray-600">|</span>
-                                <span>Máx {MAX_DURATION}s</span>
+                                <span>{t('max_label')} {MAX_DURATION}s</span>
                             </div>
                         </div>
 
@@ -368,7 +370,7 @@ export default function StoryEditor({ onClose, onPublished }) {
                                 type="text"
                                 value={overlayText}
                                 onChange={(e) => setOverlayText(e.target.value.slice(0, 200))}
-                                placeholder="Escribe tu texto..."
+                                placeholder={t('write_your_text')}
                                 autoFocus
                                 className="w-full px-6 py-4 bg-white/10 border border-white/20 text-white text-lg rounded-2xl outline-none focus:border-red-500 placeholder:text-white/30 font-bold text-center"
                                 maxLength={200}
@@ -379,10 +381,10 @@ export default function StoryEditor({ onClose, onPublished }) {
                                     onClick={() => setShowTextInput(false)}
                                     className="px-6 py-2 bg-red-600 text-white rounded-full font-bold text-sm"
                                 >
-                                    Listo
+                                    {t('done')}
                                 </button>
                             </div>
-                            <p className="text-gray-500 text-xs text-center">Arrastra el texto en la preview para moverlo</p>
+                            <p className="text-gray-500 text-xs text-center">{t('drag_text_hint')}</p>
                         </div>
                     </div>
                 )}
@@ -402,7 +404,7 @@ export default function StoryEditor({ onClose, onPublished }) {
                             ))}
                         </div>
                         <button onClick={() => setShowEmojiPicker(false)} className="w-full mt-3 py-2 text-gray-400 text-xs font-bold uppercase tracking-widest hover:text-white">
-                            Cerrar
+                            {t('close')}
                         </button>
                     </div>
                 )}
@@ -413,7 +415,7 @@ export default function StoryEditor({ onClose, onPublished }) {
                         <button
                             onClick={() => fileInputRef.current?.click()}
                             className="p-3 bg-white/10 text-white rounded-full hover:bg-white/20 transition-all"
-                            title="Cambiar archivo"
+                            title={t('change_file')}
                         >
                             <Upload className="w-5 h-5" />
                         </button>
@@ -422,14 +424,14 @@ export default function StoryEditor({ onClose, onPublished }) {
                                 <button
                                     onClick={() => { setShowTextInput(true); setShowEmojiPicker(false); }}
                                     className={`p-3 rounded-full transition-all ${overlayText ? "bg-red-600 text-white" : "bg-white/10 text-white hover:bg-white/20"}`}
-                                    title="Agregar texto"
+                                    title={t('add_text')}
                                 >
                                     <Type className="w-5 h-5" />
                                 </button>
                                 <button
                                     onClick={() => { setShowEmojiPicker(!showEmojiPicker); setShowTextInput(false); }}
                                     className={`p-3 rounded-full transition-all ${selectedEmoji ? "bg-red-600 text-white" : "bg-white/10 text-white hover:bg-white/20"}`}
-                                    title="Agregar emoji"
+                                    title={t('add_emoji')}
                                 >
                                     <Smile className="w-5 h-5" />
                                 </button>
@@ -446,12 +448,12 @@ export default function StoryEditor({ onClose, onPublished }) {
                             {uploading ? (
                                 <>
                                     <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                                    <span>Subiendo...</span>
+                                    <span>{t('uploading')}</span>
                                 </>
                             ) : (
                                 <>
                                     <Send className="w-4 h-4" />
-                                    <span>Publicar</span>
+                                    <span>{t('publish')}</span>
                                 </>
                             )}
                         </button>

@@ -3,11 +3,13 @@ import ConversacionesList from "./ConversacionesList";
 import BuscarUsuarios from "../Usuarios/BuscarUsuarios";
 import { crearConversacion, obtenerConversaciones } from "../../api/chat";
 import useAuth from "../../hooks/useAuth";
+import { useLanguage } from "../../context/LanguageContext";
 import { useNavigate } from "react-router-dom";
 import { MessageSquare, Plus } from "lucide-react";
 
 export default function Chat() {
-  const { user, token } = useAuth();
+  const { t } = useLanguage();
+  const { user } = useAuth();
   const [buscandoUsuario, setBuscandoUsuario] = useState(false);
   const [conversaciones, setConversaciones] = useState([]);
   const [cargando, setCargando] = useState(true);
@@ -16,7 +18,7 @@ export default function Chat() {
   useEffect(() => {
     const cargarConversaciones = async () => {
       try {
-        const data = await obtenerConversaciones(token);
+        const data = await obtenerConversaciones();
         setConversaciones(data);
       } catch (error) {
         setConversaciones([]);
@@ -25,8 +27,8 @@ export default function Chat() {
       }
     };
 
-    if (token) cargarConversaciones();
-  }, [token]);
+    if (user) cargarConversaciones();
+  }, [user]);
 
   const handleCrearConversacion = () => {
     setBuscandoUsuario(true);
@@ -43,7 +45,7 @@ export default function Chat() {
         esGrupo: false,
       };
 
-      const nuevaConv = await crearConversacion(data, token);
+      const nuevaConv = await crearConversacion(data);
       setConversaciones((prev) => [...prev, nuevaConv]);
       navigate(`/chat/${nuevaConv._id}`, { state: { destinatario: usuarioSeleccionado } });
       setBuscandoUsuario(false);
@@ -65,8 +67,8 @@ export default function Chat() {
             <MessageSquare className="w-6 h-6 sm:w-8 sm:h-8" />
           </div>
           <div>
-            <h1 className="text-2xl sm:text-4xl font-black text-gray-900 tracking-tighter">Mensajes</h1>
-            <p className="text-gray-400 font-bold uppercase text-[9px] sm:text-[10px] tracking-[0.2em] sm:tracking-[0.3em]">{conversaciones.length} Chat(s) activos</p>
+            <h1 className="text-2xl sm:text-4xl font-black text-gray-900 tracking-tighter">{t('messages_title')}</h1>
+            <p className="text-gray-400 font-bold uppercase text-[9px] sm:text-[10px] tracking-[0.2em] sm:tracking-[0.3em]">{conversaciones.length} {t('active_chats')}</p>
           </div>
         </div>
         <button
@@ -98,8 +100,8 @@ export default function Chat() {
           <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
             <MessageSquare className="w-10 h-10 text-gray-200" />
           </div>
-          <p className="text-gray-400 font-black uppercase text-xs tracking-widest">¿A quién quieres escribir hoy?</p>
-          <button onClick={handleCrearConversacion} className="text-red-600 font-black uppercase text-[10px] tracking-[0.4em] hover:underline">Buscar Contactos</button>
+          <p className="text-gray-400 font-black uppercase text-xs tracking-widest">{t('chat_empty_prompt')}</p>
+          <button onClick={handleCrearConversacion} className="text-red-600 font-black uppercase text-[10px] tracking-[0.4em] hover:underline">{t('search_contacts')}</button>
         </div>
       )}
     </div>

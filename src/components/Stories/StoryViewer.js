@@ -3,6 +3,7 @@ import { createPortal } from "react-dom";
 import { X, ChevronLeft, ChevronRight, Eye, Pause, Volume2, VolumeX } from "lucide-react";
 import { viewStory } from "../../api/stories";
 import useAuth from "../../hooks/useAuth";
+import { useLanguage } from "../../context/LanguageContext";
 
 export default function StoryViewer({ storyGroups, initialGroupIndex = 0, onClose }) {
     const [groupIdx, setGroupIdx] = useState(initialGroupIndex);
@@ -12,6 +13,7 @@ export default function StoryViewer({ storyGroups, initialGroupIndex = 0, onClos
     const [muted, setMuted] = useState(true);
     const [touchStart, setTouchStart] = useState(null);
     const { user } = useAuth();
+    const { t } = useLanguage();
 
     const videoRef = useRef(null);
     const timerRef = useRef(null);
@@ -304,7 +306,7 @@ export default function StoryViewer({ storyGroups, initialGroupIndex = 0, onClos
                     <div style={{ position: 'absolute', bottom: 24, left: '50%', transform: 'translateX(-50%)', zIndex: 20, display: 'flex', alignItems: 'center', gap: 8, background: 'rgba(0,0,0,0.5)', backdropFilter: 'blur(4px)', padding: '8px 16px', borderRadius: 20 }}>
                         <Eye size={16} color="rgba(255,255,255,0.7)" />
                         <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: 12, fontWeight: 'bold' }}>
-                            {currentStory.viewers?.length || 0} vistas
+                            {currentStory.viewers?.length || 0} {t('views')}
                         </span>
                     </div>
                 ) : null}
