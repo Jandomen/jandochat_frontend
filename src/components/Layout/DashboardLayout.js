@@ -13,7 +13,8 @@ import {
   Search,
   Bookmark,
   Play,
-  Camera
+  Camera,
+  Lock
 } from "lucide-react";
 import { useNotificaciones } from "../../context/NotificationsContext";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -24,6 +25,7 @@ const menuItems = [
   { id: "explorar", labelKey: "explore", icon: Search, path: "/buscar" },
   { id: "conversaciones", labelKey: "messages", icon: MessageCircle, path: "/chat" },
   { id: "baul", labelKey: "baul", icon: Bookmark, path: "/baul" },
+  { id: "caja-fuerte", labelKey: "caja_fuerte", icon: Lock, path: "/caja-fuerte" },
   { id: "videos", labelKey: "videos", icon: Play, path: "/videos" },
   { id: "galeria", labelKey: "gallery_tab", icon: Camera, path: "/galeria" },
   { id: "perfil", labelKey: "profile", icon: User, path: "/perfil" },

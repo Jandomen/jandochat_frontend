@@ -140,7 +140,7 @@ export default function Usuarios() {
           getUsuariosAleatorios(),
           getFeed()
         ]);
-        setUsuariosAleatorios(aleatorios);
+        setUsuariosAleatorios(aleatorios.filter(u => u._id !== userActual?._id));
         setFeed(feedData);
       } catch (err) {
         console.error("Error cargando datos iniciales:", err);

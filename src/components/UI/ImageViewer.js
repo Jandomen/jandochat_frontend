@@ -10,7 +10,7 @@ export default function ImageViewer({
   onPrev 
 }) {
   const item = media[currentIndex];
-  const isVideo = item?.tipo === "video" || item?.url?.match(/\.(mp4|webm|ogg)$/i);
+  const isVideo = item?.tipo === "video" || item?.url?.includes("/video/upload/") || item?.url?.match(/\.(mp4|webm|ogg)$/i);
 
   const handleKeyDown = useCallback((e) => {
     if (e.key === "Escape") onClose();

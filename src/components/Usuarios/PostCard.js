@@ -341,64 +341,80 @@ export default function PostCard({ post, id, onReact = ()=>{}, onComment = ()=>{
 
     const renderMedia = (mediaArr) => {
         if (!mediaArr || mediaArr.length === 0) return null;
-        const item = mediaArr[currentMediaIndex] || mediaArr[0];
 
-        if (!item || !item.url) return null;
+        const maxDisplay = 5;
+        const displayItems = mediaArr.slice(0, maxDisplay);
+        const remaining = mediaArr.length - maxDisplay;
+        const total = mediaArr.length;
 
-        const isVideo = item.tipo === "video" || item.url.includes("/video/upload/");
-        const tipoMedia = isVideo ? "video" : "imagen";
+        const gridCols = total === 1 ? 'grid-cols-1' : total <= 3 ? 'grid-cols-3' : 'grid-cols-3';
 
-        const content = (
-            <div className="relative group/media mt-4">
+        const renderMediaItem = (item, idx, isThumb = false) => {
+            if (!item || !item.url) return null;
+            const isVid = item.tipo === "video" || item.url.includes("/video/upload/");
+
+            return (
                 <div
-                    className="relative bg-gray-100 overflow-hidden rounded-2xl sm:rounded-[2rem] shadow-inner transition-all hover:shadow-2xl"
+                    key={idx}
+                    className={`relative group/item overflow-hidden rounded-xl cursor-pointer bg-gray-100 ${isThumb ? '' : 'aspect-square'}`}
+                    onClick={(e) => { e.stopPropagation(); setMediaFullscreen(true); setCurrentMediaIndex(idx); }}
                 >
-                    <button 
-                        onClick={(e) => { e.stopPropagation(); setMediaFullscreen(true); }}
-                        className="absolute top-4 right-4 z-20 p-2 sm:p-3 bg-black/40 backdrop-blur-md text-white rounded-full opacity-0 group-hover/media:opacity-100 transition-all hover:bg-black/60 shadow-xl"
-                        title={t('view_fullscreen')}
-                    >
-                        <Share2 className="w-3 h-3 sm:w-5 sm:h-5 rotate-45" />
-                    </button>
+                    {isVid ? (
+                        <video
+                            src={item.url}
+                            className="w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-300"
+                            muted
+                            playsInline
+                        />
+                    ) : (
+                        <img
+                            src={item.url}
+                            className="w-full h-full object-cover group-hover/item:scale-105 transition-transform duration-300"
+                            alt=""
+                        />
+                    )}
 
-                    <div onClick={() => !post.webUrl && setMediaFullscreen(true)} className={`${!post.webUrl ? 'cursor-pointer' : ''}`}>
-                        {tipoMedia === "video" ? (
-                            <div className="aspect-video flex items-center justify-center bg-black relative group/vid">
-                                <video 
-                                    src={item.url} 
-                                    controls={!post.webUrl} // No native controls if it's a redirect ad? Or maybe yes.
-                                    playsInline
-                                    className="max-w-full max-h-[250px] sm:max-h-[600px] object-contain shadow-2xl relative z-10" 
-                                    onClick={(e) => e.stopPropagation()} 
-                                />
-                                <div className="absolute inset-0 bg-gradient-to-t from-black/20 to-transparent pointer-events-none z-0"></div>
+                    {isVid && (
+                        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div className="w-8 h-8 sm:w-10 sm:h-10 bg-black/50 backdrop-blur-sm rounded-full flex items-center justify-center">
+                                <svg className="w-4 h-4 sm:w-5 sm:h-5 text-white ml-0.5" fill="currentColor" viewBox="0 0 24 24">
+                                    <polygon points="8,5 19,12 8,19" />
+                                </svg>
                             </div>
-                        ) : (
-                            <img 
-                                src={item.url} 
-                                className="w-full max-h-[250px] sm:max-h-[600px] object-contain bg-gray-100 transition-transform duration-700 group-hover/media:scale-[1.02]" 
-                                alt="" 
-                            />
-                        )}
-                    </div>
-
-                    {mediaArr.length > 1 && (
-                        <div className="absolute bottom-4 left-1/2 -translate-x-1/2 flex gap-2 z-20">
-                            {mediaArr.map((_, idx) => (
-                                <div key={idx} className={`h-2 rounded-full transition-all ${idx === currentMediaIndex ? 'w-6 bg-red-600' : 'w-2 bg-white/60'}`} />
-                            ))}
                         </div>
                     )}
+
+                    <div className="absolute inset-0 bg-black/0 group-hover/item:bg-black/10 transition-colors duration-200" />
+                </div>
+            );
+        };
+
+        const content = (
+            <div className="mt-3 sm:mt-4">
+                <div className={`grid ${gridCols} gap-1 sm:gap-1.5 rounded-2xl overflow-hidden`}>
+                    {displayItems.map((item, idx) => (
+                        <div key={idx} className="relative">
+                            {renderMediaItem(item, idx)}
+                            {idx === maxDisplay - 1 && remaining > 0 && (
+                                <div
+                                    className="absolute inset-0 bg-black/60 flex items-center justify-center cursor-pointer"
+                                    onClick={(e) => { e.stopPropagation(); setMediaFullscreen(true); setCurrentMediaIndex(idx); }}
+                                >
+                                    <span className="text-white text-2xl sm:text-3xl font-black">+{remaining}</span>
+                                </div>
+                            )}
+                        </div>
+                    ))}
                 </div>
             </div>
         );
 
         if (post.type === 'ad' && post.webUrl) {
             return (
-                <a 
-                    href={post.webUrl} 
-                    target="_blank" 
-                    rel="noopener noreferrer" 
+                <a
+                    href={post.webUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="block w-full"
                     onClick={() => trackAdClick(post._id)}
                 >

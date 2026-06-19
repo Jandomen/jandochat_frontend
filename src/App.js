@@ -19,6 +19,7 @@ import VideoFeed from "./components/Multimedia/VideoFeed";
 import Gallery from "./components/Multimedia/Gallery";
 import PerfilOtroUsuario from "./components/Usuarios/PerfilOtroUsuario";
 import Configuraciones from "./components/Usuarios/Configuraciones";
+import CajaFuerte from "./components/CajaFuerte/CajaFuerte";
 import SettingsModal from "./components/UI/SettingsModal";
 import NotFound from "./pages/NotFound";
 import { ToastProvider } from "./context/ToastContext";
@@ -233,6 +234,17 @@ function AppContent() {
                   <PrivateRoute>
                     <DashboardLayout>
                       <Baul />
+                    </DashboardLayout>
+                  </PrivateRoute>
+                }
+              />
+
+              <Route
+                path="/caja-fuerte"
+                element={
+                  <PrivateRoute>
+                    <DashboardLayout>
+                      <CajaFuerte />
                     </DashboardLayout>
                   </PrivateRoute>
                 }
