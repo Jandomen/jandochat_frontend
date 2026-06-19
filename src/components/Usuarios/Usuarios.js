@@ -147,7 +147,7 @@ export default function Usuarios() {
       }
     };
     fetchInitialData();
-  }, []);
+  }, [userActual?._id]);
 
   useEffect(() => {
     const highlightPostId = location.state?.highlightPost;
